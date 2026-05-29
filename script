@@ -1,11 +1,11 @@
 --[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]
 
 --[[
-Smile Infection - Mobile/PC GUI v27
-АВТОМАТИЧЕСКАЯ АДАПТАЦИЯ ПОД ЛЮБОЙ ЭКРАН
-- МУЗЫКА ПОЛНОСТЬЮ УДАЛЕНА (включая кнопку вкладки)
-- 4 вкладки: ИГРОК, ОРУЖИЕ, ВИЗУАЛЫ, НАСТРОЙКИ
-- Автоматический размер под экран
+Smile Infection - Mobile/PC GUI v28
+ИСПРАВЛЕНИЯ:
+- ПЕРЕТАСКИВАНИЕ НА ТЕЛЕФОНЕ (полностью переделано)
+- УМЕНЬШЕННЫЙ ТЕКСТ на кнопках и элементах
+- Адаптация под экран телефона
 ]]
 
 local Players = game:GetService("Players")
@@ -18,15 +18,16 @@ local screenSize = workspace.CurrentCamera.ViewportSize
 local screenWidth = screenSize.X
 local screenHeight = screenSize.Y
 
--- Динамические размеры
-local windowWidth = math.clamp(screenWidth * 0.75, 280, 400)
-local windowHeight = math.clamp(screenHeight * 0.7, 500, 620)
-local buttonHeight = math.clamp(screenHeight * 0.055, 32, 42)
-local fontSize = math.clamp(screenWidth * 0.03, 11, 16)
-local titleHeight = math.clamp(screenHeight * 0.065, 40, 50)
-local tabHeight = math.clamp(screenHeight * 0.055, 38, 48)
-local spacing = math.clamp(screenHeight * 0.008, 4, 8)
-local cornerRadius = math.clamp(screenWidth * 0.03, 10, 16)
+-- Динамические размеры (уменьшенные для телефона)
+local windowWidth = math.clamp(screenWidth * 0.75, 260, 380)
+local windowHeight = math.clamp(screenHeight * 0.65, 480, 580)
+local buttonHeight = math.clamp(screenHeight * 0.048, 28, 36)
+local fontSize = math.clamp(screenWidth * 0.025, 9, 13)
+local titleHeight = math.clamp(screenHeight * 0.055, 36, 45)
+local tabHeight = math.clamp(screenHeight * 0.048, 34, 42)
+local spacing = math.clamp(screenHeight * 0.006, 3, 6)
+local cornerRadius = math.clamp(screenWidth * 0.025, 8, 14)
+local knobSize = math.clamp(screenWidth * 0.03, 12, 16)
 
 -- Создание GUI
 local gui = Instance.new("ScreenGui")
@@ -76,7 +77,7 @@ warningTextBig.Parent = fullscreenWarning
 
 -- === ПЛАВАЮЩАЯ КНОПКА ===
 local floatingButton = Instance.new("TextButton")
-local btnSize = math.clamp(screenWidth * 0.12, 45, 60)
+local btnSize = math.clamp(screenWidth * 0.11, 42, 55)
 floatingButton.Size = UDim2.new(0, btnSize, 0, btnSize)
 floatingButton.Position = UDim2.new(0.85, 0, 0.85, 0)
 floatingButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
@@ -92,7 +93,7 @@ local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(1, 0)
 buttonCorner.Parent = floatingButton
 
--- Перетаскивание кнопки
+-- ПЕРЕТАСКИВАНИЕ КНОПКИ (полностью переделано)
 local buttonDragActive = false
 local buttonDragStartPos = Vector2.new()
 local buttonStartPosition = UDim2.new()
@@ -109,7 +110,9 @@ UserInputService.InputChanged:Connect(function(input)
     if buttonDragActive then
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - buttonDragStartPos
+            local newX = buttonStartPosition.X.Scale
             local newXOffset = buttonStartPosition.X.Offset + delta.X
+            local newY = buttonStartPosition.Y.Scale
             local newYOffset = buttonStartPosition.Y.Offset + delta.Y
             
             local screenSize = gui.AbsoluteSize
@@ -118,7 +121,10 @@ UserInputService.InputChanged:Connect(function(input)
             local maxX = screenSize.X - btnSize.X
             local maxY = screenSize.Y - btnSize.Y
             
-            floatingButton.Position = UDim2.new(0, math.clamp(newXOffset, 0, maxX), 0, math.clamp(newYOffset, 0, maxY))
+            local finalXScale = newX + (newXOffset / screenSize.X)
+            local finalYScale = newY + (newYOffset / screenSize.Y)
+            
+            floatingButton.Position = UDim2.new(math.clamp(finalXScale, 0, maxX/screenSize.X), 0, math.clamp(finalYScale, 0, maxY/screenSize.Y), 0)
         end
     end
 end)
@@ -161,7 +167,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 10, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "SMILE MOBILE"
+titleText.Text = "SMILE"
 titleText.TextColor3 = Color3.fromRGB(255, 90, 130)
 titleText.TextScaled = true
 titleText.Font = Enum.Font.GothamBold
@@ -169,9 +175,9 @@ titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
 
 local closeBtn = Instance.new("TextButton")
-local closeBtnSize = math.clamp(screenWidth * 0.08, 32, 40)
+local closeBtnSize = math.clamp(screenWidth * 0.07, 28, 36)
 closeBtn.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
-closeBtn.Position = UDim2.new(1, -closeBtnSize - 8, 0, (titleHeight - closeBtnSize) / 2)
+closeBtn.Position = UDim2.new(1, -closeBtnSize - 6, 0, (titleHeight - closeBtnSize) / 2)
 closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
 closeBtn.BackgroundTransparency = 0.3
 closeBtn.Text = "✖"
@@ -192,7 +198,7 @@ floatingButton.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
 
--- Перетаскивание окна
+-- ПЕРЕТАСКИВАНИЕ ОКНА (полностью переделано)
 local frameDragActive = false
 local frameDragStartPos = Vector2.new()
 local frameStartPosition = UDim2.new()
@@ -209,7 +215,9 @@ UserInputService.InputChanged:Connect(function(input)
     if frameDragActive then
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - frameDragStartPos
+            local newX = frameStartPosition.X.Scale
             local newXOffset = frameStartPosition.X.Offset + delta.X
+            local newY = frameStartPosition.Y.Scale
             local newYOffset = frameStartPosition.Y.Offset + delta.Y
             
             local screenSize = gui.AbsoluteSize
@@ -218,7 +226,10 @@ UserInputService.InputChanged:Connect(function(input)
             local maxX = screenSize.X - frmSize.X
             local maxY = screenSize.Y - frmSize.Y
             
-            frame.Position = UDim2.new(0, math.clamp(newXOffset, 0, maxX), 0, math.clamp(newYOffset, 0, maxY))
+            local finalXScale = newX + (newXOffset / screenSize.X)
+            local finalYScale = newY + (newYOffset / screenSize.Y)
+            
+            frame.Position = UDim2.new(math.clamp(finalXScale, 0, maxX/screenSize.X), 0, math.clamp(finalYScale, 0, maxY/screenSize.Y), 0)
         end
     end
 end)
@@ -229,7 +240,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Панель вкладок (ТЕПЕРЬ 4 ВКЛАДКИ)
+-- Панель вкладок (4 вкладки)
 local tabsFrame = Instance.new("Frame")
 tabsFrame.Size = UDim2.new(1, 0, 0, tabHeight)
 tabsFrame.Position = UDim2.new(0, 0, 0, titleHeight)
@@ -265,7 +276,7 @@ contentContainer.Position = UDim2.new(0, 0, 0, titleHeight + tabHeight + spacing
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = frame
 
--- Функция создания кнопок
+-- Функция создания кнопок с уменьшенным текстом
 local function createButton(parent, text, yOffset, color)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, windowWidth - 40, 0, buttonHeight)
@@ -273,7 +284,7 @@ local function createButton(parent, text, yOffset, color)
     btn.BackgroundColor3 = color or Color3.fromRGB(45, 45, 58)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextScaled = true
+    btn.TextSize = fontSize
     btn.Font = Enum.Font.Gotham
     btn.BorderSizePixel = 0
     local corner = Instance.new("UICorner")
@@ -285,12 +296,12 @@ end
 
 local function createLabel(parent, text, yOffset, textColor)
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(buttonHeight * 0.7, 20, 28))
+    lbl.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(buttonHeight * 0.6, 16, 22))
     lbl.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
     lbl.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
-    lbl.TextSize = fontSize
+    lbl.TextSize = fontSize - 1
     lbl.Font = Enum.Font.Gotham
     lbl.TextXAlignment = Enum.TextXAlignment.Center
     lbl.Parent = parent
@@ -305,11 +316,11 @@ tabPlayer.Visible = true
 tabPlayer.Parent = contentContainer
 
 local yOffset = 5
-local jumpBtn = createButton(tabPlayer, "🏃 БЕСКОНЕЧНЫЕ ПРЫЖКИ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+local jumpBtn = createButton(tabPlayer, "ПРЫЖКИ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
 yOffset = yOffset + buttonHeight + spacing
-local noclipBtn = createButton(tabPlayer, "🌀 НОКЛИП: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+local noclipBtn = createButton(tabPlayer, "НОКЛИП: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
 yOffset = yOffset + buttonHeight + spacing
-local flyBtn = createButton(tabPlayer, "🕊️ ФЛАЙ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+local flyBtn = createButton(tabPlayer, "ФЛАЙ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
 
 -- Логика
 local infiniteJump = false
@@ -323,7 +334,7 @@ local antiInventoryEnabled = false
 
 jumpBtn.MouseButton1Click:Connect(function()
     infiniteJump = not infiniteJump
-    jumpBtn.Text = infiniteJump and "🏃 БЕСКОНЕЧНЫЕ ПРЫЖКИ: ВКЛ" or "🏃 БЕСКОНЕЧНЫЕ ПРЫЖКИ: ВЫКЛ"
+    jumpBtn.Text = infiniteJump and "ПРЫЖКИ: ВКЛ" or "ПРЫЖКИ: ВЫКЛ"
     jumpBtn.BackgroundColor3 = infiniteJump and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
 end)
 
@@ -355,7 +366,7 @@ end
 
 noclipBtn.MouseButton1Click:Connect(function()
     noclipEnabled = not noclipEnabled
-    noclipBtn.Text = noclipEnabled and "🌀 НОКЛИП: ВКЛ" or "🌀 НОКЛИП: ВЫКЛ"
+    noclipBtn.Text = noclipEnabled and "НОКЛИП: ВКЛ" or "НОКЛИП: ВЫКЛ"
     noclipBtn.BackgroundColor3 = noclipEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if noclipEnabled then
         enableNoclip()
@@ -372,12 +383,12 @@ noclipBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Скорость полета
-yOffset = yOffset + buttonHeight + spacing + 5
-local flySpeedLabel = createLabel(tabPlayer, "СКОРОСТЬ ПОЛЕТА: 50", yOffset, Color3.fromRGB(200, 200, 255))
+yOffset = yOffset + buttonHeight + spacing + 3
+local flySpeedLabel = createLabel(tabPlayer, "СКОР. ПОЛЕТА: 50", yOffset, Color3.fromRGB(200, 200, 255))
 
 local flySliderTrack = Instance.new("Frame")
-flySliderTrack.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(screenHeight * 0.008, 5, 8))
-flySliderTrack.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset + buttonHeight * 0.6)
+flySliderTrack.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(screenHeight * 0.006, 4, 6))
+flySliderTrack.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset + buttonHeight * 0.55)
 flySliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
 flySliderTrack.BorderSizePixel = 0
 local flyTrackCorner = Instance.new("UICorner")
@@ -392,7 +403,6 @@ flySliderFill.BorderSizePixel = 0
 flySliderFill.Parent = flySliderTrack
 
 local flySliderKnob = Instance.new("Frame")
-local knobSize = math.clamp(screenWidth * 0.035, 14, 20)
 flySliderKnob.Size = UDim2.new(0, knobSize, 0, knobSize)
 flySliderKnob.Position = UDim2.new(0.3, -knobSize/2, 0.5, -knobSize/2)
 flySliderKnob.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
@@ -402,14 +412,14 @@ flyKnobCorner.CornerRadius = UDim.new(1, 0)
 flyKnobCorner.Parent = flySliderKnob
 flySliderKnob.Parent = flySliderTrack
 
-yOffset = yOffset + math.clamp(buttonHeight * 1.2, 38, 48)
+yOffset = yOffset + math.clamp(buttonHeight * 1.0, 32, 40)
 
 -- Скорость ходьбы
-local walkSpeedLabel = createLabel(tabPlayer, "СКОРОСТЬ ХОДЬБЫ: 16", yOffset, Color3.fromRGB(255, 255, 255))
+local walkSpeedLabel = createLabel(tabPlayer, "СКОР. ХОДЬБЫ: 16", yOffset, Color3.fromRGB(255, 255, 255))
 
 local walkSliderTrack = Instance.new("Frame")
-walkSliderTrack.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(screenHeight * 0.008, 5, 8))
-walkSliderTrack.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset + buttonHeight * 0.6)
+walkSliderTrack.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(screenHeight * 0.006, 4, 6))
+walkSliderTrack.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset + buttonHeight * 0.55)
 walkSliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
 walkSliderTrack.BorderSizePixel = 0
 local walkTrackCorner = Instance.new("UICorner")
@@ -433,14 +443,14 @@ walkKnobCorner.CornerRadius = UDim.new(1, 0)
 walkKnobCorner.Parent = walkSliderKnob
 walkSliderKnob.Parent = walkSliderTrack
 
-yOffset = yOffset + math.clamp(buttonHeight * 1.2, 38, 48)
+yOffset = yOffset + math.clamp(buttonHeight * 1.0, 32, 40)
 
 -- Анти килл кирпичи
-local antiKillBtn = createButton(tabPlayer, "🛡️ АНТИ КИЛЛ КИРПИЧИ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+local antiKillBtn = createButton(tabPlayer, "АНТИ КИЛЛ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
 yOffset = yOffset + buttonHeight + spacing
-local antiStunBtn = createButton(tabPlayer, "⚡ АНТИ ОГЛУШЕНИЕ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+local antiStunBtn = createButton(tabPlayer, "АНТИ СТАН: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
 yOffset = yOffset + buttonHeight + spacing
-local antiInventoryBtn = createButton(tabPlayer, "📦 АНТИ БЛОК ИНВЕНТАРЯ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+local antiInventoryBtn = createButton(tabPlayer, "АНТИ БЛОК: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
 
 -- Логика ползунков
 local flyDragging = false
@@ -452,7 +462,7 @@ local function updateFlySpeed(inputPos)
     if trackWidth <= 0 then return end
     local percent = math.clamp((inputPos - trackPos) / trackWidth, 0, 1)
     flySpeed = math.floor(10 + percent * 140)
-    flySpeedLabel.Text = "СКОРОСТЬ ПОЛЕТА: " .. flySpeed
+    flySpeedLabel.Text = "СКОР. ПОЛЕТА: " .. flySpeed
     flySliderFill.Size = UDim2.new(percent, 0, 1, 0)
     flySliderKnob.Position = UDim2.new(percent, -knobSize/2, 0.5, -knobSize/2)
 end
@@ -463,7 +473,7 @@ local function updateWalkSpeed(inputPos)
     if trackWidth <= 0 then return end
     local percent = math.clamp((inputPos - trackPos) / trackWidth, 0, 1)
     currentSpeed = math.floor(16 + percent * 84)
-    walkSpeedLabel.Text = "СКОРОСТЬ ХОДЬБЫ: " .. currentSpeed
+    walkSpeedLabel.Text = "СКОР. ХОДЬБЫ: " .. currentSpeed
     walkSliderFill.Size = UDim2.new(percent, 0, 1, 0)
     walkSliderKnob.Position = UDim2.new(percent, -knobSize/2, 0.5, -knobSize/2)
     local char = LocalPlayer.Character
@@ -559,7 +569,7 @@ end
 
 flyBtn.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled
-    flyBtn.Text = flyEnabled and "🕊️ ФЛАЙ: ВКЛ" or "🕊️ ФЛАЙ: ВЫКЛ"
+    flyBtn.Text = flyEnabled and "ФЛАЙ: ВКЛ" or "ФЛАЙ: ВЫКЛ"
     flyBtn.BackgroundColor3 = flyEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if flyEnabled then startFly() else stopFly() end
 end)
@@ -583,7 +593,7 @@ end
 
 antiKillBtn.MouseButton1Click:Connect(function()
     antiKillEnabled = not antiKillEnabled
-    antiKillBtn.Text = antiKillEnabled and "🛡️ АНТИ КИЛЛ КИРПИЧИ: ВКЛ" or "🛡️ АНТИ КИЛЛ КИРПИЧИ: ВЫКЛ"
+    antiKillBtn.Text = antiKillEnabled and "АНТИ КИЛЛ: ВКЛ" or "АНТИ КИЛЛ: ВЫКЛ"
     antiKillBtn.BackgroundColor3 = antiKillEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if antiKillEnabled then
         killbricksList = findKillbricks()
@@ -606,21 +616,13 @@ local function antiStunFunction()
                 if downed and downed.Value == true then downed.Value = false end
                 if ragdoll and ragdoll.Value == true then ragdoll.Value = false end
             end
-            local humanoid = char:FindFirstChild("Humanoid")
-            if humanoid then
-                if humanoid.WalkSpeed < 16 then humanoid.WalkSpeed = 16 end
-                pcall(function()
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
-                end)
-            end
         end
     end)
 end
 
 antiStunBtn.MouseButton1Click:Connect(function()
     antiStunEnabled = not antiStunEnabled
-    antiStunBtn.Text = antiStunEnabled and "⚡ АНТИ ОГЛУШЕНИЕ: ВКЛ" or "⚡ АНТИ ОГЛУШЕНИЕ: ВЫКЛ"
+    antiStunBtn.Text = antiStunEnabled and "АНТИ СТАН: ВКЛ" or "АНТИ СТАН: ВЫКЛ"
     antiStunBtn.BackgroundColor3 = antiStunEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if antiStunEnabled then
         if antiStunLoop then antiStunLoop:Disconnect() end
@@ -642,7 +644,7 @@ end
 
 antiInventoryBtn.MouseButton1Click:Connect(function()
     antiInventoryEnabled = not antiInventoryEnabled
-    antiInventoryBtn.Text = antiInventoryEnabled and "📦 АНТИ БЛОК ИНВЕНТАРЯ: ВКЛ" or "📦 АНТИ БЛОК ИНВЕНТАРЯ: ВЫКЛ"
+    antiInventoryBtn.Text = antiInventoryEnabled and "АНТИ БЛОК: ВКЛ" or "АНТИ БЛОК: ВЫКЛ"
     antiInventoryBtn.BackgroundColor3 = antiInventoryEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if antiInventoryEnabled then
         antiInventoryFunction()
@@ -662,7 +664,7 @@ tabWeapons.BackgroundTransparency = 1
 tabWeapons.Visible = false
 tabWeapons.Parent = contentContainer
 
-local fastWeaponsBtn = createButton(tabWeapons, "⚡ БЕЗ ПЕРЕЗАРЯДОК: ВЫКЛ", 10, Color3.fromRGB(45, 45, 58))
+local fastWeaponsBtn = createButton(tabWeapons, "БЕЗ ПЕРЕЗАРЯДКИ: ВЫКЛ", 10, Color3.fromRGB(45, 45, 58))
 local autoFastEnabled = false
 local autoFastLoop = nil
 
@@ -685,7 +687,7 @@ end
 
 fastWeaponsBtn.MouseButton1Click:Connect(function()
     autoFastEnabled = not autoFastEnabled
-    fastWeaponsBtn.Text = autoFastEnabled and "⚡ БЕЗ ПЕРЕЗАРЯДОК: ВКЛ" or "⚡ БЕЗ ПЕРЕЗАРЯДОК: ВЫКЛ"
+    fastWeaponsBtn.Text = autoFastEnabled and "БЕЗ ПЕРЕЗАРЯДКИ: ВКЛ" or "БЕЗ ПЕРЕЗАРЯДКИ: ВЫКЛ"
     fastWeaponsBtn.BackgroundColor3 = autoFastEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if autoFastEnabled then
         updateWeaponCooldowns()
@@ -698,7 +700,7 @@ fastWeaponsBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local weaponsInfo = createLabel(tabWeapons, "Убирает перезарядку у оружия (Бита, Бутылка, Катана, Ветка, Цепь)", 60, Color3.fromRGB(150, 150, 150))
+local weaponsInfo = createLabel(tabWeapons, "Бита, Бутылка, Катана", 60, Color3.fromRGB(150, 150, 150))
 
 -- === ВКЛАДКА ВИЗУАЛЫ ===
 local tabVisuals = Instance.new("Frame")
@@ -707,7 +709,7 @@ tabVisuals.BackgroundTransparency = 1
 tabVisuals.Visible = false
 tabVisuals.Parent = contentContainer
 
-local espBtn = createButton(tabVisuals, "🎨 ESP (ЦВЕТ ГРУППЫ): ВЫКЛ", 10, Color3.fromRGB(45, 45, 58))
+local espBtn = createButton(tabVisuals, "ESP (ЦВЕТ ГРУППЫ): ВЫКЛ", 10, Color3.fromRGB(45, 45, 58))
 local espEnabled = false
 
 local function getPlayerColor(player)
@@ -748,7 +750,7 @@ end
 
 espBtn.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
-    espBtn.Text = espEnabled and "🎨 ESP: ВКЛ" or "🎨 ESP: ВЫКЛ"
+    espBtn.Text = espEnabled and "ESP: ВКЛ" or "ESP: ВЫКЛ"
     espBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if espEnabled then
         updateESP()
@@ -765,7 +767,7 @@ tabSettings.BackgroundTransparency = 1
 tabSettings.Visible = false
 tabSettings.Parent = contentContainer
 
-local killAnticheatBtn = createButton(tabSettings, "💀 УБИТЬ АНТИЧИТ", 10, Color3.fromRGB(180, 70, 70))
+local killAnticheatBtn = createButton(tabSettings, "УБИТЬ АНТИЧИТ", 10, Color3.fromRGB(180, 70, 70))
 killAnticheatBtn.MouseButton1Click:Connect(function()
     pcall(function()
         local map = workspace:FindFirstChild("Map")
@@ -778,7 +780,7 @@ killAnticheatBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
-local adminWarnBtn = createButton(tabSettings, "👑 ПРЕДУПРЕЖДЕНИЕ ОБ АДМИНЕ: ВКЛ", 55, Color3.fromRGB(45, 45, 58))
+local adminWarnBtn = createButton(tabSettings, "ПРЕДУПР. ОБ АДМИНЕ: ВКЛ", 55, Color3.fromRGB(45, 45, 58))
 local adminWarningActive = true
 
 local function isAdmin(player)
@@ -797,9 +799,9 @@ local function checkAdmins()
                 warningFlash.BackgroundTransparency = 0.5
                 for i = 1, 8 do
                     warningFlash.BackgroundTransparency = warningFlash.BackgroundTransparency == 0.3 and 0.7 or 0.3
-                    wait(0.2)
+                    wait(0.15)
                 end
-                wait(3)
+                wait(2.5)
                 fullscreenWarning.Visible = false
             end
             return
@@ -810,12 +812,12 @@ end
 
 adminWarnBtn.MouseButton1Click:Connect(function()
     adminWarningActive = not adminWarningActive
-    adminWarnBtn.Text = adminWarningActive and "👑 ПРЕДУПРЕЖДЕНИЕ ОБ АДМИНЕ: ВКЛ" or "👑 ПРЕДУПРЕЖДЕНИЕ ОБ АДМИНЕ: ВЫКЛ"
+    adminWarnBtn.Text = adminWarningActive and "ПРЕДУПР. ОБ АДМИНЕ: ВКЛ" or "ПРЕДУПР. ОБ АДМИНЕ: ВЫКЛ"
     adminWarnBtn.BackgroundColor3 = adminWarningActive and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if not adminWarningActive then fullscreenWarning.Visible = false end
 end)
 
-spawn(function() while true do wait(4) checkAdmins() end end)
+spawn(function() while true do wait(3) checkAdmins() end end)
 
 -- Переключение вкладок
 local function setActiveTab(activeTab)
@@ -855,6 +857,5 @@ if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") th
 end
 
 print("[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]")
-print("GUI v27 - МУЗЫКА ПОЛНОСТЬЮ УДАЛЕНА")
-print("4 вкладки: ИГРОК, ОРУЖИЕ, ВИЗУАЛЫ, НАСТРОЙКИ")
-print("Автоматическая адаптация под экран: " .. math.floor(windowWidth) .. "x" .. math.floor(windowHeight))
+print("GUI v28 - ИСПРАВЛЕНО ПЕРЕТАСКИВАНИЕ И УМЕНЬШЕН ТЕКСТ")
+print("4 вкладки | Адаптивный размер: " .. math.floor(windowWidth) .. "x" .. math.floor(windowHeight))
