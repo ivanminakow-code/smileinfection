@@ -1,0 +1,860 @@
+--[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]
+
+--[[
+Smile Infection - Mobile/PC GUI v27
+АВТОМАТИЧЕСКАЯ АДАПТАЦИЯ ПОД ЛЮБОЙ ЭКРАН
+- МУЗЫКА ПОЛНОСТЬЮ УДАЛЕНА (включая кнопку вкладки)
+- 4 вкладки: ИГРОК, ОРУЖИЕ, ВИЗУАЛЫ, НАСТРОЙКИ
+- Автоматический размер под экран
+]]
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- АВТОМАТИЧЕСКИЙ РАСЧЕТ РАЗМЕРОВ ПОД ЭКРАН
+local screenSize = workspace.CurrentCamera.ViewportSize
+local screenWidth = screenSize.X
+local screenHeight = screenSize.Y
+
+-- Динамические размеры
+local windowWidth = math.clamp(screenWidth * 0.75, 280, 400)
+local windowHeight = math.clamp(screenHeight * 0.7, 500, 620)
+local buttonHeight = math.clamp(screenHeight * 0.055, 32, 42)
+local fontSize = math.clamp(screenWidth * 0.03, 11, 16)
+local titleHeight = math.clamp(screenHeight * 0.065, 40, 50)
+local tabHeight = math.clamp(screenHeight * 0.055, 38, 48)
+local spacing = math.clamp(screenHeight * 0.008, 4, 8)
+local cornerRadius = math.clamp(screenWidth * 0.03, 10, 16)
+
+-- Создание GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "SmileMobileHub"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.DisplayOrder = 999
+gui.IgnoreGuiInset = true
+
+pcall(function()
+    if syn then
+        gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    else
+        gui.Parent = game:GetService("CoreGui")
+    end
+end)
+if not gui.Parent then
+    gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Полноэкранное предупреждение
+local fullscreenWarning = Instance.new("Frame")
+fullscreenWarning.Size = UDim2.new(1, 0, 1, 0)
+fullscreenWarning.Position = UDim2.new(0, 0, 0, 0)
+fullscreenWarning.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+fullscreenWarning.BackgroundTransparency = 0.3
+fullscreenWarning.Visible = false
+fullscreenWarning.ZIndex = 999
+fullscreenWarning.Parent = gui
+
+local warningFlash = Instance.new("Frame")
+warningFlash.Size = UDim2.new(1, 0, 1, 0)
+warningFlash.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+warningFlash.BackgroundTransparency = 0.5
+warningFlash.Parent = fullscreenWarning
+
+local warningTextBig = Instance.new("TextLabel")
+warningTextBig.Size = UDim2.new(1, 0, 0, 120)
+warningTextBig.Position = UDim2.new(0, 0, 0.5, -60)
+warningTextBig.BackgroundTransparency = 1
+warningTextBig.Text = "⚠ АДМИН ОБНАРУЖЕН ⚠"
+warningTextBig.TextColor3 = Color3.fromRGB(255, 255, 255)
+warningTextBig.TextScaled = true
+warningTextBig.Font = Enum.Font.GothamBlack
+warningTextBig.ZIndex = 999
+warningTextBig.Parent = fullscreenWarning
+
+-- === ПЛАВАЮЩАЯ КНОПКА ===
+local floatingButton = Instance.new("TextButton")
+local btnSize = math.clamp(screenWidth * 0.12, 45, 60)
+floatingButton.Size = UDim2.new(0, btnSize, 0, btnSize)
+floatingButton.Position = UDim2.new(0.85, 0, 0.85, 0)
+floatingButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+floatingButton.BackgroundTransparency = 0.15
+floatingButton.Text = "✖"
+floatingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+floatingButton.TextScaled = true
+floatingButton.Font = Enum.Font.GothamBold
+floatingButton.BorderSizePixel = 0
+floatingButton.Parent = gui
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(1, 0)
+buttonCorner.Parent = floatingButton
+
+-- Перетаскивание кнопки
+local buttonDragActive = false
+local buttonDragStartPos = Vector2.new()
+local buttonStartPosition = UDim2.new()
+
+floatingButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        buttonDragActive = true
+        buttonDragStartPos = input.Position
+        buttonStartPosition = floatingButton.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if buttonDragActive then
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - buttonDragStartPos
+            local newXOffset = buttonStartPosition.X.Offset + delta.X
+            local newYOffset = buttonStartPosition.Y.Offset + delta.Y
+            
+            local screenSize = gui.AbsoluteSize
+            local btnSize = floatingButton.AbsoluteSize
+            
+            local maxX = screenSize.X - btnSize.X
+            local maxY = screenSize.Y - btnSize.Y
+            
+            floatingButton.Position = UDim2.new(0, math.clamp(newXOffset, 0, maxX), 0, math.clamp(newYOffset, 0, maxY))
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        buttonDragActive = false
+    end
+end)
+
+-- === ОСНОВНОЕ ОКНО ===
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, windowWidth, 0, windowHeight)
+frame.Position = UDim2.new(0.5, -windowWidth/2, 0.05, 0)
+frame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+frame.BackgroundTransparency = 0.08
+frame.BorderSizePixel = 0
+frame.ClipsDescendants = true
+frame.Visible = false
+frame.Parent = gui
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, cornerRadius)
+frameCorner.Parent = frame
+
+-- Заголовок
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, titleHeight)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 48)
+titleBar.BackgroundTransparency = 0.15
+titleBar.BorderSizePixel = 0
+titleBar.Parent = frame
+
+local titleBarCorner = Instance.new("UICorner")
+titleBarCorner.CornerRadius = UDim.new(0, cornerRadius)
+titleBarCorner.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(1, -60, 1, 0)
+titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "SMILE MOBILE"
+titleText.TextColor3 = Color3.fromRGB(255, 90, 130)
+titleText.TextScaled = true
+titleText.Font = Enum.Font.GothamBold
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+local closeBtn = Instance.new("TextButton")
+local closeBtnSize = math.clamp(screenWidth * 0.08, 32, 40)
+closeBtn.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
+closeBtn.Position = UDim2.new(1, -closeBtnSize - 8, 0, (titleHeight - closeBtnSize) / 2)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+closeBtn.BackgroundTransparency = 0.3
+closeBtn.Text = "✖"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.BorderSizePixel = 0
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(1, 0)
+closeCorner.Parent = closeBtn
+closeBtn.Parent = titleBar
+
+closeBtn.MouseButton1Click:Connect(function()
+    frame.Visible = false
+end)
+
+floatingButton.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+end)
+
+-- Перетаскивание окна
+local frameDragActive = false
+local frameDragStartPos = Vector2.new()
+local frameStartPosition = UDim2.new()
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        frameDragActive = true
+        frameDragStartPos = input.Position
+        frameStartPosition = frame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if frameDragActive then
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - frameDragStartPos
+            local newXOffset = frameStartPosition.X.Offset + delta.X
+            local newYOffset = frameStartPosition.Y.Offset + delta.Y
+            
+            local screenSize = gui.AbsoluteSize
+            local frmSize = frame.AbsoluteSize
+            
+            local maxX = screenSize.X - frmSize.X
+            local maxY = screenSize.Y - frmSize.Y
+            
+            frame.Position = UDim2.new(0, math.clamp(newXOffset, 0, maxX), 0, math.clamp(newYOffset, 0, maxY))
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        frameDragActive = false
+    end
+end)
+
+-- Панель вкладок (ТЕПЕРЬ 4 ВКЛАДКИ)
+local tabsFrame = Instance.new("Frame")
+tabsFrame.Size = UDim2.new(1, 0, 0, tabHeight)
+tabsFrame.Position = UDim2.new(0, 0, 0, titleHeight)
+tabsFrame.BackgroundTransparency = 1
+tabsFrame.Parent = frame
+
+local function createTabButton(name, position)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.25, 0, 1, 0)
+    btn.Position = UDim2.new(position, 0, 0, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(210, 210, 250)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.GothamBold
+    btn.BorderSizePixel = 0
+    btn.Parent = tabsFrame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 0)
+    corner.Parent = btn
+    return btn
+end
+
+local btnPlayer = createTabButton("👤", 0)
+local btnWeapons = createTabButton("🔫", 0.25)
+local btnVisuals = createTabButton("👁️", 0.5)
+local btnSettings = createTabButton("⚙️", 0.75)
+
+-- Контент вкладок
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(1, 0, 1, -(titleHeight + tabHeight + spacing))
+contentContainer.Position = UDim2.new(0, 0, 0, titleHeight + tabHeight + spacing)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = frame
+
+-- Функция создания кнопок
+local function createButton(parent, text, yOffset, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, windowWidth - 40, 0, buttonHeight)
+    btn.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset)
+    btn.BackgroundColor3 = color or Color3.fromRGB(45, 45, 58)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.Gotham
+    btn.BorderSizePixel = 0
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, cornerRadius / 1.5)
+    corner.Parent = btn
+    btn.Parent = parent
+    return btn
+end
+
+local function createLabel(parent, text, yOffset, textColor)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(buttonHeight * 0.7, 20, 28))
+    lbl.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
+    lbl.TextSize = fontSize
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Center
+    lbl.Parent = parent
+    return lbl
+end
+
+-- === ВКЛАДКА ИГРОК ===
+local tabPlayer = Instance.new("Frame")
+tabPlayer.Size = UDim2.new(1, 0, 1, 0)
+tabPlayer.BackgroundTransparency = 1
+tabPlayer.Visible = true
+tabPlayer.Parent = contentContainer
+
+local yOffset = 5
+local jumpBtn = createButton(tabPlayer, "🏃 БЕСКОНЕЧНЫЕ ПРЫЖКИ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+yOffset = yOffset + buttonHeight + spacing
+local noclipBtn = createButton(tabPlayer, "🌀 НОКЛИП: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+yOffset = yOffset + buttonHeight + spacing
+local flyBtn = createButton(tabPlayer, "🕊️ ФЛАЙ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+
+-- Логика
+local infiniteJump = false
+local noclipEnabled = false
+local flyEnabled = false
+local flySpeed = 50
+local currentSpeed = 16
+local antiKillEnabled = false
+local antiStunEnabled = false
+local antiInventoryEnabled = false
+
+jumpBtn.MouseButton1Click:Connect(function()
+    infiniteJump = not infiniteJump
+    jumpBtn.Text = infiniteJump and "🏃 БЕСКОНЕЧНЫЕ ПРЫЖКИ: ВКЛ" or "🏃 БЕСКОНЕЧНЫЕ ПРЫЖКИ: ВЫКЛ"
+    jumpBtn.BackgroundColor3 = infiniteJump and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if infiniteJump then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hum and hum:GetState() ~= Enum.HumanoidStateType.Jumping then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+-- Ноклип
+local noclipConnection = nil
+local function enableNoclip()
+    if noclipConnection then noclipConnection:Disconnect() end
+    noclipConnection = RunService.Stepped:Connect(function()
+        if noclipEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end
+    end)
+end
+
+noclipBtn.MouseButton1Click:Connect(function()
+    noclipEnabled = not noclipEnabled
+    noclipBtn.Text = noclipEnabled and "🌀 НОКЛИП: ВКЛ" or "🌀 НОКЛИП: ВЫКЛ"
+    noclipBtn.BackgroundColor3 = noclipEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if noclipEnabled then
+        enableNoclip()
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+        end
+    elseif noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+end)
+
+-- Скорость полета
+yOffset = yOffset + buttonHeight + spacing + 5
+local flySpeedLabel = createLabel(tabPlayer, "СКОРОСТЬ ПОЛЕТА: 50", yOffset, Color3.fromRGB(200, 200, 255))
+
+local flySliderTrack = Instance.new("Frame")
+flySliderTrack.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(screenHeight * 0.008, 5, 8))
+flySliderTrack.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset + buttonHeight * 0.6)
+flySliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+flySliderTrack.BorderSizePixel = 0
+local flyTrackCorner = Instance.new("UICorner")
+flyTrackCorner.CornerRadius = UDim.new(1, 0)
+flyTrackCorner.Parent = flySliderTrack
+flySliderTrack.Parent = tabPlayer
+
+local flySliderFill = Instance.new("Frame")
+flySliderFill.Size = UDim2.new(0.3, 0, 1, 0)
+flySliderFill.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+flySliderFill.BorderSizePixel = 0
+flySliderFill.Parent = flySliderTrack
+
+local flySliderKnob = Instance.new("Frame")
+local knobSize = math.clamp(screenWidth * 0.035, 14, 20)
+flySliderKnob.Size = UDim2.new(0, knobSize, 0, knobSize)
+flySliderKnob.Position = UDim2.new(0.3, -knobSize/2, 0.5, -knobSize/2)
+flySliderKnob.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+flySliderKnob.BorderSizePixel = 0
+local flyKnobCorner = Instance.new("UICorner")
+flyKnobCorner.CornerRadius = UDim.new(1, 0)
+flyKnobCorner.Parent = flySliderKnob
+flySliderKnob.Parent = flySliderTrack
+
+yOffset = yOffset + math.clamp(buttonHeight * 1.2, 38, 48)
+
+-- Скорость ходьбы
+local walkSpeedLabel = createLabel(tabPlayer, "СКОРОСТЬ ХОДЬБЫ: 16", yOffset, Color3.fromRGB(255, 255, 255))
+
+local walkSliderTrack = Instance.new("Frame")
+walkSliderTrack.Size = UDim2.new(0, windowWidth - 40, 0, math.clamp(screenHeight * 0.008, 5, 8))
+walkSliderTrack.Position = UDim2.new(0.5, -(windowWidth - 40) / 2, 0, yOffset + buttonHeight * 0.6)
+walkSliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+walkSliderTrack.BorderSizePixel = 0
+local walkTrackCorner = Instance.new("UICorner")
+walkTrackCorner.CornerRadius = UDim.new(1, 0)
+walkTrackCorner.Parent = walkSliderTrack
+walkSliderTrack.Parent = tabPlayer
+
+local walkSliderFill = Instance.new("Frame")
+walkSliderFill.Size = UDim2.new(0, 0, 1, 0)
+walkSliderFill.BackgroundColor3 = Color3.fromRGB(255, 90, 130)
+walkSliderFill.BorderSizePixel = 0
+walkSliderFill.Parent = walkSliderTrack
+
+local walkSliderKnob = Instance.new("Frame")
+walkSliderKnob.Size = UDim2.new(0, knobSize, 0, knobSize)
+walkSliderKnob.Position = UDim2.new(0, -knobSize/2, 0.5, -knobSize/2)
+walkSliderKnob.BackgroundColor3 = Color3.fromRGB(255, 90, 130)
+walkSliderKnob.BorderSizePixel = 0
+local walkKnobCorner = Instance.new("UICorner")
+walkKnobCorner.CornerRadius = UDim.new(1, 0)
+walkKnobCorner.Parent = walkSliderKnob
+walkSliderKnob.Parent = walkSliderTrack
+
+yOffset = yOffset + math.clamp(buttonHeight * 1.2, 38, 48)
+
+-- Анти килл кирпичи
+local antiKillBtn = createButton(tabPlayer, "🛡️ АНТИ КИЛЛ КИРПИЧИ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+yOffset = yOffset + buttonHeight + spacing
+local antiStunBtn = createButton(tabPlayer, "⚡ АНТИ ОГЛУШЕНИЕ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+yOffset = yOffset + buttonHeight + spacing
+local antiInventoryBtn = createButton(tabPlayer, "📦 АНТИ БЛОК ИНВЕНТАРЯ: ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+
+-- Логика ползунков
+local flyDragging = false
+local walkDragging = false
+
+local function updateFlySpeed(inputPos)
+    local trackPos = flySliderTrack.AbsolutePosition.X
+    local trackWidth = flySliderTrack.AbsoluteSize.X
+    if trackWidth <= 0 then return end
+    local percent = math.clamp((inputPos - trackPos) / trackWidth, 0, 1)
+    flySpeed = math.floor(10 + percent * 140)
+    flySpeedLabel.Text = "СКОРОСТЬ ПОЛЕТА: " .. flySpeed
+    flySliderFill.Size = UDim2.new(percent, 0, 1, 0)
+    flySliderKnob.Position = UDim2.new(percent, -knobSize/2, 0.5, -knobSize/2)
+end
+
+local function updateWalkSpeed(inputPos)
+    local trackPos = walkSliderTrack.AbsolutePosition.X
+    local trackWidth = walkSliderTrack.AbsoluteSize.X
+    if trackWidth <= 0 then return end
+    local percent = math.clamp((inputPos - trackPos) / trackWidth, 0, 1)
+    currentSpeed = math.floor(16 + percent * 84)
+    walkSpeedLabel.Text = "СКОРОСТЬ ХОДЬБЫ: " .. currentSpeed
+    walkSliderFill.Size = UDim2.new(percent, 0, 1, 0)
+    walkSliderKnob.Position = UDim2.new(percent, -knobSize/2, 0.5, -knobSize/2)
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    if hum then hum.WalkSpeed = currentSpeed end
+end
+
+flySliderTrack.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        flyDragging = true
+        updateFlySpeed(input.Position.X)
+    end
+end)
+
+walkSliderTrack.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        walkDragging = true
+        updateWalkSpeed(input.Position.X)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if flyDragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+        updateFlySpeed(input.Position.X)
+    end
+    if walkDragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+        updateWalkSpeed(input.Position.X)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        flyDragging = false
+        walkDragging = false
+    end
+end)
+
+-- Флай
+local flyConnection = nil
+local function startFly()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local humanoid = char:FindFirstChild("Humanoid")
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then return end
+    humanoid.PlatformStand = true
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bodyVelocity.Parent = rootPart
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+    bodyGyro.CFrame = rootPart.CFrame
+    bodyGyro.Parent = rootPart
+    local function updateFly()
+        if not flyEnabled or not char or not char.Parent then return false end
+        local camera = workspace.CurrentCamera
+        local moveDirection = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
+        if moveDirection.Magnitude > 0 then moveDirection = moveDirection.Unit end
+        bodyVelocity.Velocity = moveDirection * flySpeed
+        bodyGyro.CFrame = camera.CFrame
+        return true
+    end
+    flyConnection = RunService.RenderStepped:Connect(function()
+        if not updateFly() then
+            if flyConnection then flyConnection:Disconnect() end
+            flyConnection = nil
+        end
+    end)
+end
+
+local function stopFly()
+    if flyConnection then flyConnection:Disconnect(); flyConnection = nil end
+    local char = LocalPlayer.Character
+    if char then
+        local humanoid = char:FindFirstChild("Humanoid")
+        if humanoid then humanoid.PlatformStand = false end
+        local rootPart = char:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            local bv = rootPart:FindFirstChildWhichIsA("BodyVelocity")
+            if bv then bv:Destroy() end
+            local bg = rootPart:FindFirstChildWhichIsA("BodyGyro")
+            if bg then bg:Destroy() end
+        end
+    end
+end
+
+flyBtn.MouseButton1Click:Connect(function()
+    flyEnabled = not flyEnabled
+    flyBtn.Text = flyEnabled and "🕊️ ФЛАЙ: ВКЛ" or "🕊️ ФЛАЙ: ВЫКЛ"
+    flyBtn.BackgroundColor3 = flyEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if flyEnabled then startFly() else stopFly() end
+end)
+
+-- Анти килл
+local killbricksList = {}
+local function findKillbricks()
+    local bricks = {}
+    local map = workspace:FindFirstChild("Map")
+    local searchSpace = map or workspace
+    for _, part in pairs(searchSpace:GetDescendants()) do
+        if part:IsA("BasePart") and part:FindFirstChild("TouchInterest") then
+            local nameLower = string.lower(part.Name or "")
+            if string.find(nameLower, "kill") then
+                table.insert(bricks, part)
+            end
+        end
+    end
+    return bricks
+end
+
+antiKillBtn.MouseButton1Click:Connect(function()
+    antiKillEnabled = not antiKillEnabled
+    antiKillBtn.Text = antiKillEnabled and "🛡️ АНТИ КИЛЛ КИРПИЧИ: ВКЛ" or "🛡️ АНТИ КИЛЛ КИРПИЧИ: ВЫКЛ"
+    antiKillBtn.BackgroundColor3 = antiKillEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if antiKillEnabled then
+        killbricksList = findKillbricks()
+        for _, part in pairs(killbricksList) do
+            pcall(function() part.CanTouch = false end)
+        end
+    end
+end)
+
+-- Анти оглушение
+local antiStunLoop = nil
+local function antiStunFunction()
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            local stats = char:FindFirstChild("Stats")
+            if stats then
+                local downed = stats:FindFirstChild("Downed")
+                local ragdoll = stats:FindFirstChild("Ragdoll")
+                if downed and downed.Value == true then downed.Value = false end
+                if ragdoll and ragdoll.Value == true then ragdoll.Value = false end
+            end
+            local humanoid = char:FindFirstChild("Humanoid")
+            if humanoid then
+                if humanoid.WalkSpeed < 16 then humanoid.WalkSpeed = 16 end
+                pcall(function()
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
+                end)
+            end
+        end
+    end)
+end
+
+antiStunBtn.MouseButton1Click:Connect(function()
+    antiStunEnabled = not antiStunEnabled
+    antiStunBtn.Text = antiStunEnabled and "⚡ АНТИ ОГЛУШЕНИЕ: ВКЛ" or "⚡ АНТИ ОГЛУШЕНИЕ: ВЫКЛ"
+    antiStunBtn.BackgroundColor3 = antiStunEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if antiStunEnabled then
+        if antiStunLoop then antiStunLoop:Disconnect() end
+        antiStunLoop = RunService.RenderStepped:Connect(function()
+            if antiStunEnabled then antiStunFunction() end
+        end)
+    else
+        if antiStunLoop then antiStunLoop:Disconnect() end
+    end
+end)
+
+-- Анти блок инвентаря
+local antiInventoryLoop = nil
+local function antiInventoryFunction()
+    pcall(function()
+        game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true)
+    end)
+end
+
+antiInventoryBtn.MouseButton1Click:Connect(function()
+    antiInventoryEnabled = not antiInventoryEnabled
+    antiInventoryBtn.Text = antiInventoryEnabled and "📦 АНТИ БЛОК ИНВЕНТАРЯ: ВКЛ" or "📦 АНТИ БЛОК ИНВЕНТАРЯ: ВЫКЛ"
+    antiInventoryBtn.BackgroundColor3 = antiInventoryEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if antiInventoryEnabled then
+        antiInventoryFunction()
+        if antiInventoryLoop then antiInventoryLoop:Disconnect() end
+        antiInventoryLoop = RunService.RenderStepped:Connect(function()
+            if antiInventoryEnabled then antiInventoryFunction() end
+        end)
+    else
+        if antiInventoryLoop then antiInventoryLoop:Disconnect() end
+    end
+end)
+
+-- === ВКЛАДКА ОРУЖИЕ ===
+local tabWeapons = Instance.new("Frame")
+tabWeapons.Size = UDim2.new(1, 0, 1, 0)
+tabWeapons.BackgroundTransparency = 1
+tabWeapons.Visible = false
+tabWeapons.Parent = contentContainer
+
+local fastWeaponsBtn = createButton(tabWeapons, "⚡ БЕЗ ПЕРЕЗАРЯДОК: ВЫКЛ", 10, Color3.fromRGB(45, 45, 58))
+local autoFastEnabled = false
+local autoFastLoop = nil
+
+local function updateWeaponCooldowns()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local tool = char:FindFirstChildOfClass("Tool")
+    if tool and tool:FindFirstChild("Cooldown") then
+        pcall(function() tool.Cooldown.Value = 0 end)
+    end
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    if backpack then
+        for _, tool in pairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") and tool:FindFirstChild("Cooldown") then
+                pcall(function() tool.Cooldown.Value = 0 end)
+            end
+        end
+    end
+end
+
+fastWeaponsBtn.MouseButton1Click:Connect(function()
+    autoFastEnabled = not autoFastEnabled
+    fastWeaponsBtn.Text = autoFastEnabled and "⚡ БЕЗ ПЕРЕЗАРЯДОК: ВКЛ" or "⚡ БЕЗ ПЕРЕЗАРЯДОК: ВЫКЛ"
+    fastWeaponsBtn.BackgroundColor3 = autoFastEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if autoFastEnabled then
+        updateWeaponCooldowns()
+        if autoFastLoop then autoFastLoop:Disconnect() end
+        autoFastLoop = RunService.RenderStepped:Connect(function()
+            if autoFastEnabled then updateWeaponCooldowns() end
+        end)
+    else
+        if autoFastLoop then autoFastLoop:Disconnect() end
+    end
+end)
+
+local weaponsInfo = createLabel(tabWeapons, "Убирает перезарядку у оружия (Бита, Бутылка, Катана, Ветка, Цепь)", 60, Color3.fromRGB(150, 150, 150))
+
+-- === ВКЛАДКА ВИЗУАЛЫ ===
+local tabVisuals = Instance.new("Frame")
+tabVisuals.Size = UDim2.new(1, 0, 1, 0)
+tabVisuals.BackgroundTransparency = 1
+tabVisuals.Visible = false
+tabVisuals.Parent = contentContainer
+
+local espBtn = createButton(tabVisuals, "🎨 ESP (ЦВЕТ ГРУППЫ): ВЫКЛ", 10, Color3.fromRGB(45, 45, 58))
+local espEnabled = false
+
+local function getPlayerColor(player)
+    if player.TeamColor and player.TeamColor.Color then return player.TeamColor.Color end
+    return Color3.fromRGB(128, 128, 128)
+end
+
+local function updateESP()
+    if not espEnabled then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                if player.Character:FindFirstChild("ESP_Highlight") then player.Character:FindFirstChild("ESP_Highlight"):Destroy() end
+            end
+        end
+        return
+    end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local character = player.Character
+            if not character:FindFirstChild("ESP_Highlight") then
+                local esp = Instance.new("Highlight")
+                esp.Name = "ESP_Highlight"
+                esp.Adornee = character
+                esp.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                esp.FillColor = getPlayerColor(player)
+                esp.FillTransparency = 0.5
+                esp.OutlineColor = getPlayerColor(player)
+                esp.OutlineTransparency = 0.1
+                esp.Parent = character
+            else
+                local esp = character:FindFirstChild("ESP_Highlight")
+                esp.FillColor = getPlayerColor(player)
+                esp.OutlineColor = getPlayerColor(player)
+            end
+        end
+    end
+end
+
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    espBtn.Text = espEnabled and "🎨 ESP: ВКЛ" or "🎨 ESP: ВЫКЛ"
+    espBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if espEnabled then
+        updateESP()
+        spawn(function() while espEnabled do wait(0.3) updateESP() end end)
+    else
+        updateESP()
+    end
+end)
+
+-- === ВКЛАДКА НАСТРОЙКИ ===
+local tabSettings = Instance.new("Frame")
+tabSettings.Size = UDim2.new(1, 0, 1, 0)
+tabSettings.BackgroundTransparency = 1
+tabSettings.Visible = false
+tabSettings.Parent = contentContainer
+
+local killAnticheatBtn = createButton(tabSettings, "💀 УБИТЬ АНТИЧИТ", 10, Color3.fromRGB(180, 70, 70))
+killAnticheatBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        local map = workspace:FindFirstChild("Map")
+        if map and map:FindFirstChild("AntiHack") then map.AntiHack:Destroy() end
+        local char = LocalPlayer.Character
+        if char then
+            if char:FindFirstChild("StayOnPart") then char.StayOnPart:Destroy() end
+            if char:FindFirstChild("HumanoidInit") then char.HumanoidInit:Destroy() end
+        end
+    end)
+end)
+
+local adminWarnBtn = createButton(tabSettings, "👑 ПРЕДУПРЕЖДЕНИЕ ОБ АДМИНЕ: ВКЛ", 55, Color3.fromRGB(45, 45, 58))
+local adminWarningActive = true
+
+local function isAdmin(player)
+    if player.UserId == 1 then return true end
+    if player.Name == "ROBLOX" then return true end
+    pcall(function() if player:IsStaff() then return true end end)
+    return false
+end
+
+local function checkAdmins()
+    if not adminWarningActive then return end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and isAdmin(player) then
+            if not fullscreenWarning.Visible then
+                fullscreenWarning.Visible = true
+                warningFlash.BackgroundTransparency = 0.5
+                for i = 1, 8 do
+                    warningFlash.BackgroundTransparency = warningFlash.BackgroundTransparency == 0.3 and 0.7 or 0.3
+                    wait(0.2)
+                end
+                wait(3)
+                fullscreenWarning.Visible = false
+            end
+            return
+        end
+    end
+    fullscreenWarning.Visible = false
+end
+
+adminWarnBtn.MouseButton1Click:Connect(function()
+    adminWarningActive = not adminWarningActive
+    adminWarnBtn.Text = adminWarningActive and "👑 ПРЕДУПРЕЖДЕНИЕ ОБ АДМИНЕ: ВКЛ" or "👑 ПРЕДУПРЕЖДЕНИЕ ОБ АДМИНЕ: ВЫКЛ"
+    adminWarnBtn.BackgroundColor3 = adminWarningActive and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if not adminWarningActive then fullscreenWarning.Visible = false end
+end)
+
+spawn(function() while true do wait(4) checkAdmins() end end)
+
+-- Переключение вкладок
+local function setActiveTab(activeTab)
+    tabPlayer.Visible = (activeTab == btnPlayer)
+    tabWeapons.Visible = (activeTab == btnWeapons)
+    tabVisuals.Visible = (activeTab == btnVisuals)
+    tabSettings.Visible = (activeTab == btnSettings)
+    
+    btnPlayer.BackgroundColor3 = (activeTab == btnPlayer) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
+    btnWeapons.BackgroundColor3 = (activeTab == btnWeapons) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
+    btnVisuals.BackgroundColor3 = (activeTab == btnVisuals) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
+    btnSettings.BackgroundColor3 = (activeTab == btnSettings) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
+end
+
+btnPlayer.MouseButton1Click:Connect(function() setActiveTab(btnPlayer) end)
+btnWeapons.MouseButton1Click:Connect(function() setActiveTab(btnWeapons) end)
+btnVisuals.MouseButton1Click:Connect(function() setActiveTab(btnVisuals) end)
+btnSettings.MouseButton1Click:Connect(function() setActiveTab(btnSettings) end)
+
+-- Инициализация
+LocalPlayer.CharacterAdded:Connect(function(char)
+    wait(0.5)
+    local hum = char:FindFirstChild("Humanoid")
+    if hum then hum.WalkSpeed = currentSpeed end
+    if noclipEnabled then
+        wait(0.2)
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+setActiveTab(btnPlayer)
+wait(0.5)
+if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+    LocalPlayer.Character.Humanoid.WalkSpeed = currentSpeed
+end
+
+print("[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]")
+print("GUI v27 - МУЗЫКА ПОЛНОСТЬЮ УДАЛЕНА")
+print("4 вкладки: ИГРОК, ОРУЖИЕ, ВИЗУАЛЫ, НАСТРОЙКИ")
+print("Автоматическая адаптация под экран: " .. math.floor(windowWidth) .. "x" .. math.floor(windowHeight))
