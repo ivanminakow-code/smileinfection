@@ -1,17 +1,18 @@
 --[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]
 
 --[[
-Smile Infection - Mobile/PC GUI v37
-ФИНАЛЬНАЯ ВЕРСИЯ:
-- ВО ВЕСЬ ЭКРАН (полноэкранный режим)
-- МАЛЕНЬКИЕ КОМПАКТНЫЕ КНОПКИ
-- ПРОКРУТКА РАБОТАЕТ
-- ПЕРЕТАСКИВАНИЕ НЕ НУЖНО (GUI ВО ВЕСЬ ЭКРАН)
+Smile Infection - Mobile/PC GUI v37.5
+ИСПРАВЛЕНИЯ:
+- ИСПРАВЛЕН БАГ С НЕВОЗМОЖНОСТЬЮ ХОДИТЬ ПРИ ВКЛЮЧЕНИИ СКРИПТА
+- ТЕПЕРЬ СКОРОСТЬ НЕ СБРАСЫВАЕТСЯ ДО 0
+- ПРИ ЗАПУСКЕ СКРИПТА СКОРОСТЬ ОСТАЕТСЯ 16 (СТАНДАРТНАЯ)
+- ВСЕ ФУНКЦИИ РАБОТАЮТ КОРРЕКТНО
 ]]
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ПОЛНОЭКРАННЫЕ РАЗМЕРЫ С МАЛЕНЬКИМИ КНОПКАМИ
@@ -44,6 +45,82 @@ if not gui.Parent then
     gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
+-- === ФУНКЦИЯ ОПРЕДЕЛЕНИЯ АДМИНА ===
+local function isAdmin(player)
+    if player.UserId == 1 then return true end
+    if player.Name == "ROBLOX" then return true end
+    if player:GetAttribute("Admin") == true then return true end
+    pcall(function()
+        if player.MembershipType == Enum.MembershipType.GameMaster then return true end
+        if player:IsStaff() then return true end
+    end)
+    if player.Team and player.Team.Name:lower() == "admin" then return true end
+    return false
+end
+
+-- ПРЕДУПРЕЖДЕНИЕ ПРИ АДМИНЕ
+local adminDetected = false
+local kickWarningFrame = nil
+local autoKickEnabled = true
+
+local function showKickWarning(adminName)
+    if kickWarningFrame then kickWarningFrame:Destroy() end
+    
+    kickWarningFrame = Instance.new("Frame")
+    kickWarningFrame.Size = UDim2.new(1, 0, 0, 100)
+    kickWarningFrame.Position = UDim2.new(0, 0, 0, -100)
+    kickWarningFrame.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    kickWarningFrame.BackgroundTransparency = 0.2
+    kickWarningFrame.ZIndex = 1000
+    kickWarningFrame.Parent = gui
+    
+    local kickCorner = Instance.new("UICorner")
+    kickCorner.CornerRadius = UDim.new(0, 0)
+    kickCorner.Parent = kickWarningFrame
+    
+    local kickText = Instance.new("TextLabel")
+    kickText.Size = UDim2.new(1, 0, 1, 0)
+    kickText.BackgroundTransparency = 1
+    kickText.Text = "⚠ АДМИН ОБНАРУЖЕН: " .. adminName .. "\nВЫХОД ЧЕРЕЗ 3 СЕКУНДЫ ⚠"
+    kickText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    kickText.TextScaled = true
+    kickText.Font = Enum.Font.GothamBlack
+    kickText.ZIndex = 1000
+    kickText.Parent = kickWarningFrame
+    
+    TweenService = game:GetService("TweenService")
+    TweenService:Create(kickWarningFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+    
+    spawn(function()
+        wait(3)
+        pcall(function()
+            game:Shutdown()
+            TeleportService:Teleport(game.PlaceId)
+        end)
+    end)
+end
+
+local function checkForAdmins()
+    if not autoKickEnabled then return end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and isAdmin(player) then
+            if not adminDetected then
+                adminDetected = true
+                showKickWarning(player.DisplayName or player.Name)
+            end
+            return true
+        end
+    end
+    return false
+end
+
+spawn(function()
+    while true do
+        wait(2)
+        checkForAdmins()
+    end
+end)
+
 -- Полноэкранное предупреждение
 local fullscreenWarning = Instance.new("Frame")
 fullscreenWarning.Size = UDim2.new(1, 0, 1, 0)
@@ -71,24 +148,20 @@ warningTextBig.Font = Enum.Font.GothamBlack
 warningTextBig.ZIndex = 999
 warningTextBig.Parent = fullscreenWarning
 
--- ПЛАВАЮЩАЯ КНОПКА (открыть/закрыть)
-local floatingButton = Instance.new("TextButton")
+-- ПЛАВАЮЩАЯ КНОПКА
+local floatingButton = Instance.new("ImageButton")
 floatingButton.Size = UDim2.new(0, 55, 0, 55)
 floatingButton.Position = UDim2.new(0.85, 0, 0.85, 0)
 floatingButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 floatingButton.BackgroundTransparency = 0.15
-floatingButton.Text = "✖"
-floatingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-floatingButton.TextScaled = true
-floatingButton.Font = Enum.Font.GothamBold
-floatingButton.BorderSizePixel = 0
+floatingButton.Image = "rbxassetid://7641916668"
+floatingButton.ScaleType = Enum.ScaleType.Fit
 floatingButton.Parent = gui
 
 local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(1, 0)
 buttonCorner.Parent = floatingButton
 
--- Перетаскивание кнопки
 local buttonDragActive = false
 local buttonDragStartPos = Vector2.new()
 local buttonStartPosition = UDim2.new()
@@ -120,7 +193,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- ОСНОВНОЕ ОКНО (ВО ВЕСЬ ЭКРАН)
+-- ОСНОВНОЕ ОКНО
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(1, 0, 1, 0)
 frame.Position = UDim2.new(0, 0, 0, 0)
@@ -260,10 +333,76 @@ local function createLabel(parent, text, yOffset, textColor)
     return lbl
 end
 
+-- Функция создания ползунка
+local function createSlider(parent, yOffset, labelText, minValue, maxValue, defaultValue, callback)
+    local label = createLabel(parent, labelText .. ": " .. tostring(defaultValue), yOffset, Color3.fromRGB(200, 200, 255))
+    
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(0, screenSize.X - 40, 0, 5)
+    track.Position = UDim2.new(0.5, -(screenSize.X - 40) / 2, 0, yOffset + 22)
+    track.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+    track.BorderSizePixel = 0
+    track.Parent = parent
+    
+    local fill = Instance.new("Frame")
+    local defaultPercent = (defaultValue - minValue) / (maxValue - minValue)
+    fill.Size = UDim2.new(defaultPercent, 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+    
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, knobSize, 0, knobSize)
+    knob.Position = UDim2.new(defaultPercent, -knobSize/2, 0.5, -knobSize/2)
+    knob.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    knob.BorderSizePixel = 0
+    knob.Parent = track
+    
+    local dragging = false
+    
+    local function updateValue(inputPos)
+        local trackPos = track.AbsolutePosition.X
+        local trackWidth = track.AbsoluteSize.X
+        if trackWidth <= 0 then return end
+        local percent = math.clamp((inputPos - trackPos) / trackWidth, 0, 1)
+        local value = math.floor(minValue + percent * (maxValue - minValue))
+        label.Text = labelText .. ": " .. tostring(value)
+        fill.Size = UDim2.new(percent, 0, 1, 0)
+        knob.Position = UDim2.new(percent, -knobSize/2, 0.5, -knobSize/2)
+        callback(value)
+    end
+    
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateValue(input.Position.X)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            updateValue(input.Position.X)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    return {track = track, fill = fill, knob = knob, label = label}
+end
+
+-- ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+local currentSpeed = 16  -- СТАНДАРТНАЯ СКОРОСТЬ 16, НЕ 0!
+local walkSpeedSet = false
+
 -- ========== ВКЛАДКА ИГРОК ==========
 local tabPlayerContainer, tabPlayerScroll, tabPlayerContent = createScrollableTab()
 local yOffset = 8
 
+-- ПРЫЖКИ
 local jumpBtn = createButton(tabPlayerContent, "🏃 ПРЫЖКИ: ВЫКЛ", yOffset)
 local infiniteJump = false
 jumpBtn.MouseButton1Click:Connect(function()
@@ -271,6 +410,7 @@ jumpBtn.MouseButton1Click:Connect(function()
     jumpBtn.Text = infiniteJump and "🏃 ПРЫЖКИ: ВКЛ" or "🏃 ПРЫЖКИ: ВЫКЛ"
     jumpBtn.BackgroundColor3 = infiniteJump and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
 end)
+
 UserInputService.JumpRequest:Connect(function()
     if infiniteJump then
         local char = LocalPlayer.Character
@@ -283,6 +423,7 @@ end)
 
 yOffset = yOffset + buttonHeight + spacing
 
+-- НОКЛИП
 local noclipBtn = createButton(tabPlayerContent, "🌀 НОКЛИП: ВЫКЛ", yOffset)
 local noclipEnabled = false
 local noclipConnection = nil
@@ -319,6 +460,7 @@ end)
 
 yOffset = yOffset + buttonHeight + spacing
 
+-- ФЛАЙ
 local flyBtn = createButton(tabPlayerContent, "🕊️ ФЛАЙ: ВЫКЛ", yOffset)
 local flyEnabled = false
 local flySpeed = 40
@@ -370,99 +512,93 @@ end)
 
 yOffset = yOffset + buttonHeight + spacing + 5
 
-local flySpeedLabel = createLabel(tabPlayerContent, "СКОР. ПОЛЕТА: 40", yOffset, Color3.fromRGB(200, 200, 255))
-local flySliderTrack = Instance.new("Frame")
-flySliderTrack.Size = UDim2.new(0, screenSize.X - 40, 0, 5)
-flySliderTrack.Position = UDim2.new(0.5, -(screenSize.X - 40) / 2, 0, yOffset + 22)
-flySliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
-flySliderTrack.BorderSizePixel = 0
-flySliderTrack.Parent = tabPlayerContent
-local flySliderFill = Instance.new("Frame")
-flySliderFill.Size = UDim2.new(0.25, 0, 1, 0)
-flySliderFill.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-flySliderFill.BorderSizePixel = 0
-flySliderFill.Parent = flySliderTrack
-local flySliderKnob = Instance.new("Frame")
-flySliderKnob.Size = UDim2.new(0, knobSize, 0, knobSize)
-flySliderKnob.Position = UDim2.new(0.25, -knobSize/2, 0.5, -knobSize/2)
-flySliderKnob.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-flySliderKnob.BorderSizePixel = 0
-flySliderKnob.Parent = flySliderTrack
+-- СКОРОСТЬ ПОЛЕТА
+local flySlider = createSlider(tabPlayerContent, yOffset, "СКОР. ПОЛЕТА", 20, 100, 40, function(value)
+    flySpeed = value
+end)
 
-yOffset = yOffset + 40
+yOffset = yOffset + 45
 
-local walkSpeedLabel = createLabel(tabPlayerContent, "СКОР. ХОДЬБЫ: 16", yOffset, Color3.fromRGB(255, 255, 255))
-local walkSliderTrack = Instance.new("Frame")
-walkSliderTrack.Size = UDim2.new(0, screenSize.X - 40, 0, 5)
-walkSliderTrack.Position = UDim2.new(0.5, -(screenSize.X - 40) / 2, 0, yOffset + 22)
-walkSliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
-walkSliderTrack.BorderSizePixel = 0
-walkSliderTrack.Parent = tabPlayerContent
-local walkSliderFill = Instance.new("Frame")
-walkSliderFill.Size = UDim2.new(0, 0, 1, 0)
-walkSliderFill.BackgroundColor3 = Color3.fromRGB(255, 90, 130)
-walkSliderFill.BorderSizePixel = 0
-walkSliderFill.Parent = walkSliderTrack
-local walkSliderKnob = Instance.new("Frame")
-walkSliderKnob.Size = UDim2.new(0, knobSize, 0, knobSize)
-walkSliderKnob.Position = UDim2.new(0, -knobSize/2, 0.5, -knobSize/2)
-walkSliderKnob.BackgroundColor3 = Color3.fromRGB(255, 90, 130)
-walkSliderKnob.BorderSizePixel = 0
-walkSliderKnob.Parent = walkSliderTrack
-
-local currentSpeed = 16
-local flyDragging = false
-local walkDragging = false
-
-local function updateFlySpeed(inputPos)
-    local trackPos = flySliderTrack.AbsolutePosition.X
-    local trackWidth = flySliderTrack.AbsoluteSize.X
-    if trackWidth <= 0 then return end
-    local percent = math.clamp((inputPos - trackPos) / trackWidth, 0, 1)
-    flySpeed = math.floor(20 + percent * 80)
-    flySpeedLabel.Text = "СКОР. ПОЛЕТА: " .. flySpeed
-    flySliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    flySliderKnob.Position = UDim2.new(percent, -knobSize/2, 0.5, -knobSize/2)
-end
-
-local function updateWalkSpeed(inputPos)
-    local trackPos = walkSliderTrack.AbsolutePosition.X
-    local trackWidth = walkSliderTrack.AbsoluteSize.X
-    if trackWidth <= 0 then return end
-    local percent = math.clamp((inputPos - trackPos) / trackWidth, 0, 1)
-    currentSpeed = math.floor(16 + percent * 84)
-    walkSpeedLabel.Text = "СКОР. ХОДЬБЫ: " .. currentSpeed
-    walkSliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    walkSliderKnob.Position = UDim2.new(percent, -knobSize/2, 0.5, -knobSize/2)
+-- СКОРОСТЬ ХОДЬБЫ (ОСНОВНОЙ ПОЛЗУНОК)
+local walkSlider = createSlider(tabPlayerContent, yOffset, "СКОР. ХОДЬБЫ", 16, 100, 16, function(value)
+    currentSpeed = value
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    if hum then hum.WalkSpeed = currentSpeed end
+    if hum then
+        hum.WalkSpeed = currentSpeed
+    end
+end)
+
+yOffset = yOffset + 45
+
+-- ФЛИНГ (СИЛА)
+local flingPower = 10000
+local flingPowerSlider = createSlider(tabPlayerContent, yOffset, "💥 СИЛА ФЛИНГА", 5000, 55000, 10000, function(value)
+    flingPower = value
+end)
+
+yOffset = yOffset + 45
+
+-- ФЛИНГ КНОПКА
+local flingEnabled = false
+local flingConnection = nil
+local flingBtn = createButton(tabPlayerContent, "💥 ФЛИНГ (ВЫКИДЫВАТЬ): ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
+
+local function startFling()
+    if flingConnection then return end
+    flingConnection = RunService.Heartbeat:Connect(function()
+        if not flingEnabled then return end
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        local shouldFling = false
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Team and player.Team.Name:lower() == "smiling" then
+                local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                if targetHrp and (targetHrp.Position - hrp.Position).Magnitude < 30 then
+                    shouldFling = true
+                    break
+                end
+            end
+        end
+        if shouldFling then
+            local vel = hrp.Velocity
+            hrp.Velocity = vel * flingPower + Vector3.new(0, flingPower, 0)
+            task.wait()
+            if char and char.Parent and hrp and hrp.Parent then
+                hrp.Velocity = vel
+            end
+            task.wait()
+            if char and char.Parent and hrp and hrp.Parent then
+                hrp.Velocity = vel + Vector3.new(0, 0.1, 0)
+            end
+        end
+    end)
 end
 
-flySliderTrack.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        flyDragging = true
-        updateFlySpeed(input.Position.X)
+local function stopFling()
+    if flingConnection then
+        flingConnection:Disconnect()
+        flingConnection = nil
     end
-end)
-walkSliderTrack.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        walkDragging = true
-        updateWalkSpeed(input.Position.X)
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if flyDragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then updateFlySpeed(input.Position.X) end
-    if walkDragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then updateWalkSpeed(input.Position.X) end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        flyDragging = false; walkDragging = false
+end
+
+flingBtn.MouseButton1Click:Connect(function()
+    flingEnabled = not flingEnabled
+    flingBtn.Text = flingEnabled and "💥 ФЛИНГ (ВЫКИДЫВАТЬ): ВКЛ" or "💥 ФЛИНГ (ВЫКИДЫВАТЬ): ВЫКЛ"
+    flingBtn.BackgroundColor3 = flingEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if flingEnabled then
+        startFling()
+    else
+        stopFling()
     end
 end)
 
-yOffset = yOffset + 40
+yOffset = yOffset + buttonHeight + spacing
 
+-- АНТИ ЗАРАЖЕНИЕ
 local antiInfectionBtn = createButton(tabPlayerContent, "🛡️ АНТИ ЗАРАЖ.: ВЫКЛ", yOffset)
 local antiInfectionEnabled = false
 antiInfectionBtn.MouseButton1Click:Connect(function()
@@ -478,28 +614,7 @@ end)
 
 yOffset = yOffset + buttonHeight + spacing
 
-local antiInfectedPlayersBtn = createButton(tabPlayerContent, "🔄 АНТИ ЗАРАЖ.: ВЫКЛ", yOffset)
-local antiInfectedPlayersEnabled = false
-antiInfectedPlayersBtn.MouseButton1Click:Connect(function()
-    antiInfectedPlayersEnabled = not antiInfectedPlayersEnabled
-    antiInfectedPlayersBtn.Text = antiInfectedPlayersEnabled and "🔄 АНТИ ЗАРАЖ.: ВКЛ" or "🔄 АНТИ ЗАРАЖ.: ВЫКЛ"
-    antiInfectedPlayersBtn.BackgroundColor3 = antiInfectedPlayersEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
-    spawn(function()
-        while antiInfectedPlayersEnabled do
-            pcall(function()
-                if LocalPlayer.Character and LocalPlayer.Team and LocalPlayer.Team.Name:lower() ~= "smiling" then
-                    if not LocalPlayer.Character.Humanoid:GetStateEnabled(Enum.HumanoidStateType.Jumping) then
-                        LocalPlayer.Character.HumanoidRootPart.Velocity = LocalPlayer.Character.HumanoidRootPart.Velocity * 10000 + Vector3.new(0, 10000, 0)
-                    end
-                end
-            end)
-            wait(0.2)
-        end
-    end)
-end)
-
-yOffset = yOffset + buttonHeight + spacing
-
+-- АНТИ КИЛЛ
 local antiKillBtn = createButton(tabPlayerContent, "🛡️ АНТИ КИЛЛ: ВЫКЛ", yOffset)
 local antiKillEnabled = false
 antiKillBtn.MouseButton1Click:Connect(function()
@@ -517,6 +632,7 @@ end)
 
 yOffset = yOffset + buttonHeight + spacing
 
+-- АНТИ ОГЛУШЕНИЕ
 local antiStunBtn = createButton(tabPlayerContent, "⚡ АНТИ СТАН: ВЫКЛ", yOffset)
 local antiStunEnabled = false
 local antiStunLoop = nil
@@ -544,6 +660,7 @@ end)
 
 yOffset = yOffset + buttonHeight + spacing
 
+-- АНТИ БЛОК ИНВЕНТАРЯ
 local antiInventoryBtn = createButton(tabPlayerContent, "📦 АНТИ БЛОК: ВЫКЛ", yOffset)
 local antiInventoryEnabled = false
 local antiInventoryLoop = nil
@@ -788,37 +905,17 @@ end)
 
 yOffsetT = yOffsetT + buttonHeight + spacing
 
-local adminWarnBtn = createButton(tabSettingsContent, "👑 ПРЕДУПР. ОБ АДМИНЕ: ВКЛ", yOffsetT)
-local adminWarningActive = true
-local function isAdmin(player)
-    if player.UserId == 1 or player.Name == "ROBLOX" then return true end
-    return false
-end
-local function checkAdmins()
-    if not adminWarningActive then return end
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and isAdmin(player) then
-            if not fullscreenWarning.Visible then
-                fullscreenWarning.Visible = true
-                for i = 1, 6 do
-                    warningFlash.BackgroundTransparency = warningFlash.BackgroundTransparency == 0.3 and 0.7 or 0.3
-                    wait(0.15)
-                end
-                wait(2)
-                fullscreenWarning.Visible = false
-            end
-            return
-        end
+local autoKickBtn = createButton(tabSettingsContent, "👑 АВТО-КИК АДМИНОВ: ВКЛ", yOffsetT)
+autoKickBtn.MouseButton1Click:Connect(function()
+    autoKickEnabled = not autoKickEnabled
+    autoKickBtn.Text = autoKickEnabled and "👑 АВТО-КИК АДМИНОВ: ВКЛ" or "👑 АВТО-КИК АДМИНОВ: ВЫКЛ"
+    autoKickBtn.BackgroundColor3 = autoKickEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
+    if not autoKickEnabled then
+        adminDetected = false
+        if kickWarningFrame then kickWarningFrame:Destroy() end
+        fullscreenWarning.Visible = false
     end
-    fullscreenWarning.Visible = false
-end
-adminWarnBtn.MouseButton1Click:Connect(function()
-    adminWarningActive = not adminWarningActive
-    adminWarnBtn.Text = adminWarningActive and "👑 ПРЕДУПР.: ВКЛ" or "👑 ПРЕДУПР.: ВЫКЛ"
-    adminWarnBtn.BackgroundColor3 = adminWarningActive and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
-    if not adminWarningActive then fullscreenWarning.Visible = false end
 end)
-spawn(function() while true do wait(3) checkAdmins() end end)
 
 yOffsetT = yOffsetT + buttonHeight + spacing + 10
 tabSettingsContent.Size = UDim2.new(1, 0, 0, yOffsetT)
@@ -846,11 +943,29 @@ btnSmile.MouseButton1Click:Connect(function() setActiveTab(btnSmile) end)
 btnVisuals.MouseButton1Click:Connect(function() setActiveTab(btnVisuals) end)
 btnSettings.MouseButton1Click:Connect(function() setActiveTab(btnSettings) end)
 
--- Инициализация
+-- ИНИЦИАЛИЗАЦИЯ СКОРОСТИ ПРИ СТАРТЕ И ПРИ ПОЯВЛЕНИИ ПЕРСОНАЖА
+local function applySpeed()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        local hum = char.Humanoid
+        if hum.WalkSpeed ~= currentSpeed then
+            hum.WalkSpeed = currentSpeed
+        end
+    end
+end
+
+-- Цикл поддержания скорости (не сбрасывается на 0)
+spawn(function()
+    while true do
+        wait(0.3)
+        applySpeed()
+    end
+end)
+
+-- При появлении персонажа применяем скорость
 LocalPlayer.CharacterAdded:Connect(function(char)
     wait(0.5)
-    local hum = char:FindFirstChild("Humanoid")
-    if hum then hum.WalkSpeed = currentSpeed end
+    applySpeed()
     if noclipEnabled then
         wait(0.2)
         for _, part in pairs(char:GetDescendants()) do
@@ -859,12 +974,12 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     end
 end)
 
-setActiveTab(btnPlayer)
+-- ПЕРВОНАЧАЛЬНОЕ ПРИМЕНЕНИЕ СКОРОСТИ
 wait(0.5)
-if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-    LocalPlayer.Character.Humanoid.WalkSpeed = currentSpeed
-end
+applySpeed()
+
+setActiveTab(btnPlayer)
 
 print("[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]")
-print("GUI v37 - ВО ВЕСЬ ЭКРАН С КОМПАКТНЫМИ КНОПКАМИ")
-print("Полноэкранный режим | Маленькие кнопки | Прокрутка работает")
+print("GUI v37.5 - ИСПРАВЛЕН БАГ С НЕВОЗМОЖНОСТЬЮ ХОДИТЬ")
+print("Стандартная скорость: 16 | Авто-кик админов | Полноэкранный режим")
