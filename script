@@ -1,12 +1,12 @@
 --[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]
 
 --[[
-Smile Infection - Mobile/PC GUI v37.5
-ИСПРАВЛЕНИЯ:
-- ИСПРАВЛЕН БАГ С НЕВОЗМОЖНОСТЬЮ ХОДИТЬ ПРИ ВКЛЮЧЕНИИ СКРИПТА
-- ТЕПЕРЬ СКОРОСТЬ НЕ СБРАСЫВАЕТСЯ ДО 0
-- ПРИ ЗАПУСКЕ СКРИПТА СКОРОСТЬ ОСТАЕТСЯ 16 (СТАНДАРТНАЯ)
-- ВСЕ ФУНКЦИИ РАБОТАЮТ КОРРЕКТНО
+Smile Infection - Mobile/PC GUI v37.6
+ДОБАВЛЕНО:
+- ВКЛАДКА МУЗЫКА (с песней ФОНК ID: 15689451063)
+- ПРОКРУТКА ВО ВСЕХ ВКЛАДКАХ (включая музыку)
+- ПОЛЗУНОК ГРОМКОСТИ
+- ВОСПРОИЗВЕДЕНИЕ/ОСТАНОВКА МУЗЫКИ
 ]]
 
 local Players = game:GetService("Players")
@@ -88,7 +88,7 @@ local function showKickWarning(adminName)
     kickText.ZIndex = 1000
     kickText.Parent = kickWarningFrame
     
-    TweenService = game:GetService("TweenService")
+    local TweenService = game:GetService("TweenService")
     TweenService:Create(kickWarningFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 0, 0, 0)}):Play()
     
     spawn(function()
@@ -247,7 +247,7 @@ floatingButton.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
 
--- Панель вкладок
+-- Панель вкладок (ТЕПЕРЬ 6 ВКЛАДОК)
 local tabsFrame = Instance.new("Frame")
 tabsFrame.Size = UDim2.new(1, 0, 0, tabHeight)
 tabsFrame.Position = UDim2.new(0, 0, 0, titleHeight)
@@ -256,7 +256,7 @@ tabsFrame.Parent = frame
 
 local function createTabButton(name, position)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.2, 0, 1, 0)
+    btn.Size = UDim2.new(0.166, 0, 1, 0)  -- 1/6 ширины
     btn.Position = UDim2.new(position, 0, 0, 0)
     btn.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
     btn.Text = name
@@ -269,10 +269,11 @@ local function createTabButton(name, position)
 end
 
 local btnPlayer = createTabButton("👤", 0)
-local btnWeapons = createTabButton("🔫", 0.2)
-local btnSmile = createTabButton("😊", 0.4)
-local btnVisuals = createTabButton("👁️", 0.6)
-local btnSettings = createTabButton("⚙️", 0.8)
+local btnWeapons = createTabButton("🔫", 0.166)
+local btnSmile = createTabButton("😊", 0.332)
+local btnVisuals = createTabButton("👁️", 0.498)
+local btnMusic = createTabButton("🎵", 0.664)
+local btnSettings = createTabButton("⚙️", 0.83)
 
 -- Функция создания прокручиваемой вкладки
 local function createScrollableTab()
@@ -395,8 +396,46 @@ local function createSlider(parent, yOffset, labelText, minValue, maxValue, defa
 end
 
 -- ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
-local currentSpeed = 16  -- СТАНДАРТНАЯ СКОРОСТЬ 16, НЕ 0!
-local walkSpeedSet = false
+local currentSpeed = 16
+local noclipEnabled = false
+local noclipConnection = nil
+local flyEnabled = false
+local flySpeed = 40
+local flyConnection = nil
+local originalGravity = nil
+local flingEnabled = false
+local flingConnection = nil
+local flingPower = 10000
+
+-- ========== МУЗЫКАЛЬНЫЙ ПЛЕЕР ==========
+local musicSound = nil
+local musicVolume = 0.7
+local musicPlaying = false
+
+-- Функция для музыки
+local function playMusic()
+    if musicSound then
+        musicSound:Stop()
+        musicSound:Destroy()
+    end
+    
+    musicSound = Instance.new("Sound")
+    musicSound.SoundId = "rbxassetid://15689451063"
+    musicSound.Volume = musicVolume
+    musicSound.Looped = true
+    musicSound.Parent = gui
+    musicSound:Play()
+    musicPlaying = true
+end
+
+local function stopMusic()
+    if musicSound then
+        musicSound:Stop()
+        musicSound:Destroy()
+        musicSound = nil
+    end
+    musicPlaying = false
+end
 
 -- ========== ВКЛАДКА ИГРОК ==========
 local tabPlayerContainer, tabPlayerScroll, tabPlayerContent = createScrollableTab()
@@ -425,33 +464,22 @@ yOffset = yOffset + buttonHeight + spacing
 
 -- НОКЛИП
 local noclipBtn = createButton(tabPlayerContent, "🌀 НОКЛИП: ВЫКЛ", yOffset)
-local noclipEnabled = false
-local noclipConnection = nil
-local function enableNoclip()
-    if noclipConnection then noclipConnection:Disconnect() end
-    noclipConnection = RunService.Stepped:Connect(function()
-        if noclipEnabled then
-            local char = LocalPlayer.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
-                end
-            end
-        end
-    end)
-end
 noclipBtn.MouseButton1Click:Connect(function()
     noclipEnabled = not noclipEnabled
     noclipBtn.Text = noclipEnabled and "🌀 НОКЛИП: ВКЛ" or "🌀 НОКЛИП: ВЫКЛ"
     noclipBtn.BackgroundColor3 = noclipEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if noclipEnabled then
-        enableNoclip()
-        local char = LocalPlayer.Character
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = false end
+        if noclipConnection then noclipConnection:Disconnect() end
+        noclipConnection = RunService.Stepped:Connect(function()
+            if noclipEnabled then
+                local char = LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end
             end
-        end
+        end)
     elseif noclipConnection then
         noclipConnection:Disconnect()
         noclipConnection = nil
@@ -462,11 +490,6 @@ yOffset = yOffset + buttonHeight + spacing
 
 -- ФЛАЙ
 local flyBtn = createButton(tabPlayerContent, "🕊️ ФЛАЙ: ВЫКЛ", yOffset)
-local flyEnabled = false
-local flySpeed = 40
-local flyConnection = nil
-local originalGravity = nil
-
 local function startFly()
     local char = LocalPlayer.Character
     if not char then return end
@@ -519,20 +542,17 @@ end)
 
 yOffset = yOffset + 45
 
--- СКОРОСТЬ ХОДЬБЫ (ОСНОВНОЙ ПОЛЗУНОК)
+-- СКОРОСТЬ ХОДЬБЫ
 local walkSlider = createSlider(tabPlayerContent, yOffset, "СКОР. ХОДЬБЫ", 16, 100, 16, function(value)
     currentSpeed = value
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    if hum then
-        hum.WalkSpeed = currentSpeed
-    end
+    if hum then hum.WalkSpeed = currentSpeed end
 end)
 
 yOffset = yOffset + 45
 
 -- ФЛИНГ (СИЛА)
-local flingPower = 10000
 local flingPowerSlider = createSlider(tabPlayerContent, yOffset, "💥 СИЛА ФЛИНГА", 5000, 55000, 10000, function(value)
     flingPower = value
 end)
@@ -540,8 +560,6 @@ end)
 yOffset = yOffset + 45
 
 -- ФЛИНГ КНОПКА
-local flingEnabled = false
-local flingConnection = nil
 local flingBtn = createButton(tabPlayerContent, "💥 ФЛИНГ (ВЫКИДЫВАТЬ): ВЫКЛ", yOffset, Color3.fromRGB(45, 45, 58))
 
 local function startFling()
@@ -589,11 +607,7 @@ flingBtn.MouseButton1Click:Connect(function()
     flingEnabled = not flingEnabled
     flingBtn.Text = flingEnabled and "💥 ФЛИНГ (ВЫКИДЫВАТЬ): ВКЛ" or "💥 ФЛИНГ (ВЫКИДЫВАТЬ): ВЫКЛ"
     flingBtn.BackgroundColor3 = flingEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
-    if flingEnabled then
-        startFling()
-    else
-        stopFling()
-    end
+    if flingEnabled then startFling() else stopFling() end
 end)
 
 yOffset = yOffset + buttonHeight + spacing
@@ -684,7 +698,7 @@ yOffset = yOffset + buttonHeight + spacing + 10
 tabPlayerContent.Size = UDim2.new(1, 0, 0, yOffset)
 tabPlayerScroll.CanvasSize = UDim2.new(0, 0, 0, yOffset)
 
--- ВКЛАДКА ОРУЖИЕ
+-- ========== ВКЛАДКА ОРУЖИЕ ==========
 local tabWeaponsContainer, tabWeaponsScroll, tabWeaponsContent = createScrollableTab()
 local yOffsetW = 8
 
@@ -753,7 +767,7 @@ tabWeaponsContent.Size = UDim2.new(1, 0, 0, yOffsetW)
 tabWeaponsScroll.CanvasSize = UDim2.new(0, 0, 0, yOffsetW)
 tabWeaponsContainer.Visible = false
 
--- ВКЛАДКА УЛЫБКИ
+-- ========== ВКЛАДКА УЛЫБКИ ==========
 local tabSmileContainer, tabSmileScroll, tabSmileContent = createScrollableTab()
 local yOffsetS = 8
 
@@ -817,7 +831,7 @@ tabSmileContent.Size = UDim2.new(1, 0, 0, yOffsetS)
 tabSmileScroll.CanvasSize = UDim2.new(0, 0, 0, yOffsetS)
 tabSmileContainer.Visible = false
 
--- ВКЛАДКА ВИЗУАЛЫ
+-- ========== ВКЛАДКА ВИЗУАЛЫ ==========
 local tabVisualsContainer, tabVisualsScroll, tabVisualsContent = createScrollableTab()
 local yOffsetV = 8
 
@@ -892,7 +906,53 @@ tabVisualsContent.Size = UDim2.new(1, 0, 0, yOffsetV)
 tabVisualsScroll.CanvasSize = UDim2.new(0, 0, 0, yOffsetV)
 tabVisualsContainer.Visible = false
 
--- ВКЛАДКА НАСТРОЙКИ
+-- ========== ВКЛАДКА МУЗЫКА ==========
+local tabMusicContainer, tabMusicScroll, tabMusicContent = createScrollableTab()
+local yOffsetM = 8
+
+-- Заголовок плеера
+local musicTitle = createLabel(tabMusicContent, "🎵 МУЗЫКАЛЬНЫЙ ПЛЕЕР", yOffsetM, Color3.fromRGB(255, 150, 100))
+yOffsetM = yOffsetM + 30
+
+-- Название песни
+local songName = createLabel(tabMusicContent, "СЕЙЧАС ИГРАЕТ: ФОНК", yOffsetM, Color3.fromRGB(200, 200, 200))
+yOffsetM = yOffsetM + 30
+
+-- Кнопка воспроизведения/паузы
+local musicPlayBtn = createButton(tabMusicContent, "▶️ ВКЛЮЧИТЬ МУЗЫКУ", yOffsetM, Color3.fromRGB(80, 120, 200))
+musicPlayBtn.MouseButton1Click:Connect(function()
+    if musicPlaying then
+        stopMusic()
+        musicPlayBtn.Text = "▶️ ВКЛЮЧИТЬ МУЗЫКУ"
+        musicPlayBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 200)
+    else
+        playMusic()
+        musicPlayBtn.Text = "⏸️ ОСТАНОВИТЬ МУЗЫКУ"
+        musicPlayBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+    end
+end)
+
+yOffsetM = yOffsetM + buttonHeight + spacing + 5
+
+-- Ползунок громкости
+local volumeSlider = createSlider(tabMusicContent, yOffsetM, "ГРОМКОСТЬ", 0, 100, 70, function(value)
+    musicVolume = value / 100
+    if musicSound then
+        musicSound.Volume = musicVolume
+    end
+end)
+
+yOffsetM = yOffsetM + 50
+
+-- Информация
+local musicInfo = createLabel(tabMusicContent, "ID ТРЕКА: 15689451063", yOffsetM, Color3.fromRGB(150, 150, 150))
+
+yOffsetM = yOffsetM + 30 + 10
+tabMusicContent.Size = UDim2.new(1, 0, 0, yOffsetM)
+tabMusicScroll.CanvasSize = UDim2.new(0, 0, 0, yOffsetM)
+tabMusicContainer.Visible = false
+
+-- ========== ВКЛАДКА НАСТРОЙКИ ==========
 local tabSettingsContainer, tabSettingsScroll, tabSettingsContent = createScrollableTab()
 local yOffsetT = 8
 
@@ -928,12 +988,14 @@ local function setActiveTab(activeTab)
     tabWeaponsContainer.Visible = (activeTab == btnWeapons)
     tabSmileContainer.Visible = (activeTab == btnSmile)
     tabVisualsContainer.Visible = (activeTab == btnVisuals)
+    tabMusicContainer.Visible = (activeTab == btnMusic)
     tabSettingsContainer.Visible = (activeTab == btnSettings)
     
     btnPlayer.BackgroundColor3 = (activeTab == btnPlayer) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
     btnWeapons.BackgroundColor3 = (activeTab == btnWeapons) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
     btnSmile.BackgroundColor3 = (activeTab == btnSmile) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
     btnVisuals.BackgroundColor3 = (activeTab == btnVisuals) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
+    btnMusic.BackgroundColor3 = (activeTab == btnMusic) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
     btnSettings.BackgroundColor3 = (activeTab == btnSettings) and Color3.fromRGB(80, 60, 110) or Color3.fromRGB(30, 30, 42)
 end
 
@@ -941,9 +1003,10 @@ btnPlayer.MouseButton1Click:Connect(function() setActiveTab(btnPlayer) end)
 btnWeapons.MouseButton1Click:Connect(function() setActiveTab(btnWeapons) end)
 btnSmile.MouseButton1Click:Connect(function() setActiveTab(btnSmile) end)
 btnVisuals.MouseButton1Click:Connect(function() setActiveTab(btnVisuals) end)
+btnMusic.MouseButton1Click:Connect(function() setActiveTab(btnMusic) end)
 btnSettings.MouseButton1Click:Connect(function() setActiveTab(btnSettings) end)
 
--- ИНИЦИАЛИЗАЦИЯ СКОРОСТИ ПРИ СТАРТЕ И ПРИ ПОЯВЛЕНИИ ПЕРСОНАЖА
+-- ИНИЦИАЛИЗАЦИЯ СКОРОСТИ
 local function applySpeed()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") then
@@ -954,7 +1017,6 @@ local function applySpeed()
     end
 end
 
--- Цикл поддержания скорости (не сбрасывается на 0)
 spawn(function()
     while true do
         wait(0.3)
@@ -962,7 +1024,6 @@ spawn(function()
     end
 end)
 
--- При появлении персонажа применяем скорость
 LocalPlayer.CharacterAdded:Connect(function(char)
     wait(0.5)
     applySpeed()
@@ -974,12 +1035,10 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     end
 end)
 
--- ПЕРВОНАЧАЛЬНОЕ ПРИМЕНЕНИЕ СКОРОСТИ
 wait(0.5)
 applySpeed()
-
 setActiveTab(btnPlayer)
 
 print("[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]")
-print("GUI v37.5 - ИСПРАВЛЕН БАГ С НЕВОЗМОЖНОСТЬЮ ХОДИТЬ")
-print("Стандартная скорость: 16 | Авто-кик админов | Полноэкранный режим")
+print("GUI v37.6 - ДОБАВЛЕНА ВКЛАДКА МУЗЫКА С ПЕСНЕЙ ФОНК")
+print("6 вкладок | Прокрутка везде | Музыка с регулировкой громкости")
