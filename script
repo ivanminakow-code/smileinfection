@@ -1,12 +1,12 @@
 --[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]
 
 --[[
-Smile Infection - Mobile/PC GUI v36
-ИСПРАВЛЕНИЯ:
-- ПЕРЕТАСКИВАНИЕ GUI НА ТЕЛЕФОНЕ (полностью переделано)
-- МАЛЕНЬКИЕ КНОПКИ (30px высота)
+Smile Infection - Mobile/PC GUI v37
+ФИНАЛЬНАЯ ВЕРСИЯ:
+- ВО ВЕСЬ ЭКРАН (полноэкранный режим)
+- МАЛЕНЬКИЕ КОМПАКТНЫЕ КНОПКИ
 - ПРОКРУТКА РАБОТАЕТ
-- ВСЕ ПОМЕЩАЕТСЯ НА ЭКРАНЕ
+- ПЕРЕТАСКИВАНИЕ НЕ НУЖНО (GUI ВО ВЕСЬ ЭКРАН)
 ]]
 
 local Players = game:GetService("Players")
@@ -14,16 +14,16 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- МАЛЕНЬКИЕ РАЗМЕРЫ ДЛЯ ТЕЛЕФОНА
-local windowWidth = 340
-local windowHeight = 580
-local buttonHeight = 30
-local fontSize = 11
-local titleHeight = 42
-local tabHeight = 38
-local spacing = 3
-local cornerRadius = 10
-local knobSize = 14
+-- ПОЛНОЭКРАННЫЕ РАЗМЕРЫ С МАЛЕНЬКИМИ КНОПКАМИ
+local screenSize = workspace.CurrentCamera.ViewportSize
+local windowWidth = screenSize.X
+local windowHeight = screenSize.Y
+local buttonHeight = 38
+local fontSize = 13
+local titleHeight = 50
+local tabHeight = 45
+local spacing = 4
+local knobSize = 16
 
 -- Создание GUI
 local gui = Instance.new("ScreenGui")
@@ -71,9 +71,9 @@ warningTextBig.Font = Enum.Font.GothamBlack
 warningTextBig.ZIndex = 999
 warningTextBig.Parent = fullscreenWarning
 
--- ПЛАВАЮЩАЯ КНОПКА
+-- ПЛАВАЮЩАЯ КНОПКА (открыть/закрыть)
 local floatingButton = Instance.new("TextButton")
-floatingButton.Size = UDim2.new(0, 50, 0, 50)
+floatingButton.Size = UDim2.new(0, 55, 0, 55)
 floatingButton.Position = UDim2.new(0.85, 0, 0.85, 0)
 floatingButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 floatingButton.BackgroundTransparency = 0.15
@@ -88,7 +88,7 @@ local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(1, 0)
 buttonCorner.Parent = floatingButton
 
--- Перетаскивание кнопки (работает на телефоне)
+-- Перетаскивание кнопки
 local buttonDragActive = false
 local buttonDragStartPos = Vector2.new()
 local buttonStartPosition = UDim2.new()
@@ -120,22 +120,18 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- ОСНОВНОЕ ОКНО
+-- ОСНОВНОЕ ОКНО (ВО ВЕСЬ ЭКРАН)
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, windowWidth, 0, windowHeight)
-frame.Position = UDim2.new(0.5, -windowWidth/2, 0.08, 0)
+frame.Size = UDim2.new(1, 0, 1, 0)
+frame.Position = UDim2.new(0, 0, 0, 0)
 frame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
-frame.BackgroundTransparency = 0.08
+frame.BackgroundTransparency = 0.05
 frame.BorderSizePixel = 0
 frame.ClipsDescendants = true
 frame.Visible = true
 frame.Parent = gui
 
-local frameCorner = Instance.new("UICorner")
-frameCorner.CornerRadius = UDim.new(0, cornerRadius)
-frameCorner.Parent = frame
-
--- Заголовок (ЗОНА ПЕРЕТАСКИВАНИЯ)
+-- Заголовок
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, titleHeight)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
@@ -144,13 +140,9 @@ titleBar.BackgroundTransparency = 0.15
 titleBar.BorderSizePixel = 0
 titleBar.Parent = frame
 
-local titleBarCorner = Instance.new("UICorner")
-titleBarCorner.CornerRadius = UDim.new(0, cornerRadius)
-titleBarCorner.Parent = titleBar
-
 local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, -60, 1, 0)
-titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.Size = UDim2.new(1, -80, 1, 0)
+titleText.Position = UDim2.new(0, 15, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "SMILE INFECTION"
 titleText.TextColor3 = Color3.fromRGB(255, 90, 130)
@@ -160,8 +152,8 @@ titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 35, 0, 35)
-closeBtn.Position = UDim2.new(1, -42, 0, 4)
+closeBtn.Size = UDim2.new(0, 42, 0, 42)
+closeBtn.Position = UDim2.new(1, -52, 0, 4)
 closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
 closeBtn.BackgroundTransparency = 0.3
 closeBtn.Text = "✖"
@@ -182,38 +174,6 @@ floatingButton.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
 
--- ПЕРЕТАСКИВАНИЕ ОКНА НА ТЕЛЕФОНЕ (исправлено)
-local frameDragActive = false
-local frameDragStartPos = Vector2.new()
-local frameStartPosition = UDim2.new()
-
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        frameDragActive = true
-        frameDragStartPos = input.Position
-        frameStartPosition = frame.Position
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if frameDragActive then
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - frameDragStartPos
-            local newXOffset = frameStartPosition.X.Offset + delta.X
-            local newYOffset = frameStartPosition.Y.Offset + delta.Y
-            local screenSize = gui.AbsoluteSize
-            local frmSize = frame.AbsoluteSize
-            frame.Position = UDim2.new(0, math.clamp(newXOffset, 0, screenSize.X - frmSize.X), 0, math.clamp(newYOffset, 0, screenSize.Y - frmSize.Y))
-        end
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        frameDragActive = false
-    end
-end)
-
 -- Панель вкладок
 local tabsFrame = Instance.new("Frame")
 tabsFrame.Size = UDim2.new(1, 0, 0, tabHeight)
@@ -232,9 +192,6 @@ local function createTabButton(name, position)
     btn.Font = Enum.Font.GothamBold
     btn.BorderSizePixel = 0
     btn.Parent = tabsFrame
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 0)
-    corner.Parent = btn
     return btn
 end
 
@@ -247,8 +204,8 @@ local btnSettings = createTabButton("⚙️", 0.8)
 -- Функция создания прокручиваемой вкладки
 local function createScrollableTab()
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 1, -(titleHeight + tabHeight + spacing))
-    container.Position = UDim2.new(0, 0, 0, titleHeight + tabHeight + spacing)
+    container.Size = UDim2.new(1, 0, 1, -(titleHeight + tabHeight + 5))
+    container.Position = UDim2.new(0, 0, 0, titleHeight + tabHeight + 5)
     container.BackgroundTransparency = 1
     container.ClipsDescendants = true
     container.Parent = frame
@@ -258,7 +215,7 @@ local function createScrollableTab()
     scrollingFrame.Position = UDim2.new(0, 0, 0, 0)
     scrollingFrame.BackgroundTransparency = 1
     scrollingFrame.BorderSizePixel = 0
-    scrollingFrame.ScrollBarThickness = 3
+    scrollingFrame.ScrollBarThickness = 4
     scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
     scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     scrollingFrame.Parent = container
@@ -274,8 +231,8 @@ end
 -- Функция создания кнопок
 local function createButton(parent, text, yOffset, color)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, windowWidth - 30, 0, buttonHeight)
-    btn.Position = UDim2.new(0.5, -(windowWidth - 30) / 2, 0, yOffset)
+    btn.Size = UDim2.new(0, screenSize.X - 40, 0, buttonHeight)
+    btn.Position = UDim2.new(0.5, -(screenSize.X - 40) / 2, 0, yOffset)
     btn.BackgroundColor3 = color or Color3.fromRGB(45, 45, 58)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -283,7 +240,7 @@ local function createButton(parent, text, yOffset, color)
     btn.Font = Enum.Font.Gotham
     btn.BorderSizePixel = 0
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
     btn.Parent = parent
     return btn
@@ -291,8 +248,8 @@ end
 
 local function createLabel(parent, text, yOffset, textColor)
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0, windowWidth - 30, 0, 20)
-    lbl.Position = UDim2.new(0.5, -(windowWidth - 30) / 2, 0, yOffset)
+    lbl.Size = UDim2.new(0, screenSize.X - 40, 0, 22)
+    lbl.Position = UDim2.new(0.5, -(screenSize.X - 40) / 2, 0, yOffset)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
     lbl.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
@@ -305,7 +262,7 @@ end
 
 -- ========== ВКЛАДКА ИГРОК ==========
 local tabPlayerContainer, tabPlayerScroll, tabPlayerContent = createScrollableTab()
-local yOffset = 5
+local yOffset = 8
 
 local jumpBtn = createButton(tabPlayerContent, "🏃 ПРЫЖКИ: ВЫКЛ", yOffset)
 local infiniteJump = false
@@ -391,7 +348,6 @@ local function startFly()
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
         if moveDirection.Magnitude > 0 then moveDirection = moveDirection.Unit end
         rootPart.Velocity = moveDirection * flySpeed
-        rootPart.AssemblyLinearVelocity = moveDirection * flySpeed
     end)
 end
 local function stopFly()
@@ -412,17 +368,14 @@ flyBtn.MouseButton1Click:Connect(function()
     if flyEnabled then startFly() else stopFly() end
 end)
 
-yOffset = yOffset + buttonHeight + spacing + 3
+yOffset = yOffset + buttonHeight + spacing + 5
 
 local flySpeedLabel = createLabel(tabPlayerContent, "СКОР. ПОЛЕТА: 40", yOffset, Color3.fromRGB(200, 200, 255))
 local flySliderTrack = Instance.new("Frame")
-flySliderTrack.Size = UDim2.new(0, windowWidth - 30, 0, 5)
-flySliderTrack.Position = UDim2.new(0.5, -(windowWidth - 30) / 2, 0, yOffset + 20)
+flySliderTrack.Size = UDim2.new(0, screenSize.X - 40, 0, 5)
+flySliderTrack.Position = UDim2.new(0.5, -(screenSize.X - 40) / 2, 0, yOffset + 22)
 flySliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
 flySliderTrack.BorderSizePixel = 0
-local flyTrackCorner = Instance.new("UICorner")
-flyTrackCorner.CornerRadius = UDim.new(1, 0)
-flyTrackCorner.Parent = flySliderTrack
 flySliderTrack.Parent = tabPlayerContent
 local flySliderFill = Instance.new("Frame")
 flySliderFill.Size = UDim2.new(0.25, 0, 1, 0)
@@ -434,22 +387,16 @@ flySliderKnob.Size = UDim2.new(0, knobSize, 0, knobSize)
 flySliderKnob.Position = UDim2.new(0.25, -knobSize/2, 0.5, -knobSize/2)
 flySliderKnob.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
 flySliderKnob.BorderSizePixel = 0
-local flyKnobCorner = Instance.new("UICorner")
-flyKnobCorner.CornerRadius = UDim.new(1, 0)
-flyKnobCorner.Parent = flySliderKnob
 flySliderKnob.Parent = flySliderTrack
 
-yOffset = yOffset + 38
+yOffset = yOffset + 40
 
 local walkSpeedLabel = createLabel(tabPlayerContent, "СКОР. ХОДЬБЫ: 16", yOffset, Color3.fromRGB(255, 255, 255))
 local walkSliderTrack = Instance.new("Frame")
-walkSliderTrack.Size = UDim2.new(0, windowWidth - 30, 0, 5)
-walkSliderTrack.Position = UDim2.new(0.5, -(windowWidth - 30) / 2, 0, yOffset + 20)
+walkSliderTrack.Size = UDim2.new(0, screenSize.X - 40, 0, 5)
+walkSliderTrack.Position = UDim2.new(0.5, -(screenSize.X - 40) / 2, 0, yOffset + 22)
 walkSliderTrack.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
 walkSliderTrack.BorderSizePixel = 0
-local walkTrackCorner = Instance.new("UICorner")
-walkTrackCorner.CornerRadius = UDim.new(1, 0)
-walkTrackCorner.Parent = walkSliderTrack
 walkSliderTrack.Parent = tabPlayerContent
 local walkSliderFill = Instance.new("Frame")
 walkSliderFill.Size = UDim2.new(0, 0, 1, 0)
@@ -461,14 +408,11 @@ walkSliderKnob.Size = UDim2.new(0, knobSize, 0, knobSize)
 walkSliderKnob.Position = UDim2.new(0, -knobSize/2, 0.5, -knobSize/2)
 walkSliderKnob.BackgroundColor3 = Color3.fromRGB(255, 90, 130)
 walkSliderKnob.BorderSizePixel = 0
-local walkKnobCorner = Instance.new("UICorner")
-walkKnobCorner.CornerRadius = UDim.new(1, 0)
-walkKnobCorner.Parent = walkSliderKnob
 walkSliderKnob.Parent = walkSliderTrack
 
+local currentSpeed = 16
 local flyDragging = false
 local walkDragging = false
-local currentSpeed = 16
 
 local function updateFlySpeed(inputPos)
     local trackPos = flySliderTrack.AbsolutePosition.X
@@ -517,7 +461,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-yOffset = yOffset + 38
+yOffset = yOffset + 40
 
 local antiInfectionBtn = createButton(tabPlayerContent, "🛡️ АНТИ ЗАРАЖ.: ВЫКЛ", yOffset)
 local antiInfectionEnabled = false
@@ -543,10 +487,9 @@ antiInfectedPlayersBtn.MouseButton1Click:Connect(function()
     spawn(function()
         while antiInfectedPlayersEnabled do
             pcall(function()
-                if LocalPlayer.Character and LocalPlayer.Character.Humanoid and LocalPlayer.Team and LocalPlayer.Team.Name:lower() ~= "smiling" then
+                if LocalPlayer.Character and LocalPlayer.Team and LocalPlayer.Team.Name:lower() ~= "smiling" then
                     if not LocalPlayer.Character.Humanoid:GetStateEnabled(Enum.HumanoidStateType.Jumping) then
-                        local rootPart = LocalPlayer.Character.HumanoidRootPart
-                        rootPart.Velocity = rootPart.Velocity * 10000 + Vector3.new(0, 10000, 0)
+                        LocalPlayer.Character.HumanoidRootPart.Velocity = LocalPlayer.Character.HumanoidRootPart.Velocity * 10000 + Vector3.new(0, 10000, 0)
                     end
                 end
             end)
@@ -564,11 +507,9 @@ antiKillBtn.MouseButton1Click:Connect(function()
     antiKillBtn.Text = antiKillEnabled and "🛡️ АНТИ КИЛЛ: ВКЛ" or "🛡️ АНТИ КИЛЛ: ВЫКЛ"
     antiKillBtn.BackgroundColor3 = antiKillEnabled and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(45, 45, 58)
     if antiKillEnabled then
-        local map = workspace:FindFirstChild("Map")
-        local searchSpace = map or workspace
-        for _, part in pairs(searchSpace:GetDescendants()) do
-            if part:IsA("BasePart") and part:FindFirstChild("TouchInterest") and string.find(part.Name or "", "Kill") then
-                pcall(function() part.CanTouch = false; part.CanQuery = false end)
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and string.find(part.Name or "", "Kill") then
+                pcall(function() part.CanTouch = false end)
             end
         end
     end
@@ -582,14 +523,10 @@ local antiStunLoop = nil
 local function antiStunFunction()
     pcall(function()
         local char = LocalPlayer.Character
-        if char then
-            local stats = char:FindFirstChild("Stats")
-            if stats then
-                local downed = stats:FindFirstChild("Downed")
-                local ragdoll = stats:FindFirstChild("Ragdoll")
-                if downed and downed.Value == true then downed.Value = false end
-                if ragdoll and ragdoll.Value == true then ragdoll.Value = false end
-            end
+        if char and char:FindFirstChild("Stats") then
+            local stats = char.Stats
+            if stats.Downed and stats.Downed.Value == true then stats.Downed.Value = false end
+            if stats.Ragdoll and stats.Ragdoll.Value == true then stats.Ragdoll.Value = false end
         end
     end)
 end
@@ -630,9 +567,9 @@ yOffset = yOffset + buttonHeight + spacing + 10
 tabPlayerContent.Size = UDim2.new(1, 0, 0, yOffset)
 tabPlayerScroll.CanvasSize = UDim2.new(0, 0, 0, yOffset)
 
--- Остальные вкладки (упрощенно для экономии места)
+-- ВКЛАДКА ОРУЖИЕ
 local tabWeaponsContainer, tabWeaponsScroll, tabWeaponsContent = createScrollableTab()
-local yOffsetW = 5
+local yOffsetW = 8
 
 local weaponDropdown = createButton(tabWeaponsContent, "🎯 ВЫБОР ОРУЖИЯ: BAT", yOffsetW, Color3.fromRGB(55, 55, 70))
 local weaponsList = {"Bat", "Bottle", "Katana", "Branch", "Spare", "Chain"}
@@ -699,9 +636,9 @@ tabWeaponsContent.Size = UDim2.new(1, 0, 0, yOffsetW)
 tabWeaponsScroll.CanvasSize = UDim2.new(0, 0, 0, yOffsetW)
 tabWeaponsContainer.Visible = false
 
--- Вкладка УЛЫБКИ
+-- ВКЛАДКА УЛЫБКИ
 local tabSmileContainer, tabSmileScroll, tabSmileContent = createScrollableTab()
-local yOffsetS = 5
+local yOffsetS = 8
 
 local infectBtn = createButton(tabSmileContent, "😷 ЗАРАЗИТЬ СЕБЯ", yOffsetS, Color3.fromRGB(200, 80, 80))
 infectBtn.MouseButton1Click:Connect(function()
@@ -749,6 +686,7 @@ killGrab.MouseButton1Click:Connect(function()
 end)
 
 yOffsetS = yOffsetS + buttonHeight + spacing
+
 local instantInfect = createButton(tabSmileContent, "⚡ МГН. ЗАРАЖЕНИЕ", yOffsetS, Color3.fromRGB(200, 150, 50))
 instantInfect.MouseButton1Click:Connect(function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Infected") then
@@ -762,9 +700,9 @@ tabSmileContent.Size = UDim2.new(1, 0, 0, yOffsetS)
 tabSmileScroll.CanvasSize = UDim2.new(0, 0, 0, yOffsetS)
 tabSmileContainer.Visible = false
 
--- Вкладка ВИЗУАЛЫ
+-- ВКЛАДКА ВИЗУАЛЫ
 local tabVisualsContainer, tabVisualsScroll, tabVisualsContent = createScrollableTab()
-local yOffsetV = 5
+local yOffsetV = 8
 
 local espBtn = createButton(tabVisualsContent, "🎨 ESP: ВЫКЛ", yOffsetV)
 local espEnabled = false
@@ -775,8 +713,8 @@ end
 local function updateESP()
     if not espEnabled then
         for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                if player.Character:FindFirstChild("ESP_Highlight") then player.Character:FindFirstChild("ESP_Highlight"):Destroy() end
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("ESP_Highlight") then
+                player.Character:FindFirstChild("ESP_Highlight"):Destroy()
             end
         end
         return
@@ -793,6 +731,10 @@ local function updateESP()
                 esp.OutlineColor = getPlayerColor(player)
                 esp.OutlineTransparency = 0.1
                 esp.Parent = player.Character
+            else
+                local esp = player.Character:FindFirstChild("ESP_Highlight")
+                esp.FillColor = getPlayerColor(player)
+                esp.OutlineColor = getPlayerColor(player)
             end
         end
     end
@@ -810,6 +752,7 @@ espBtn.MouseButton1Click:Connect(function()
 end)
 
 yOffsetV = yOffsetV + buttonHeight + spacing
+
 local fullbrightBtn = createButton(tabVisualsContent, "💡 FULLBRIGHT", yOffsetV, Color3.fromRGB(100, 150, 200))
 fullbrightBtn.MouseButton1Click:Connect(function()
     pcall(function()
@@ -820,6 +763,7 @@ fullbrightBtn.MouseButton1Click:Connect(function()
 end)
 
 yOffsetV = yOffsetV + buttonHeight + spacing
+
 local removeFog = createButton(tabVisualsContent, "🌫️ УБРАТЬ ТУМАН", yOffsetV, Color3.fromRGB(100, 150, 200))
 removeFog.MouseButton1Click:Connect(function()
     game.Lighting.FogStart = math.huge
@@ -831,15 +775,14 @@ tabVisualsContent.Size = UDim2.new(1, 0, 0, yOffsetV)
 tabVisualsScroll.CanvasSize = UDim2.new(0, 0, 0, yOffsetV)
 tabVisualsContainer.Visible = false
 
--- Вкладка НАСТРОЙКИ
+-- ВКЛАДКА НАСТРОЙКИ
 local tabSettingsContainer, tabSettingsScroll, tabSettingsContent = createScrollableTab()
-local yOffsetT = 5
+local yOffsetT = 8
 
 local killAnticheat = createButton(tabSettingsContent, "💀 УБИТЬ АНТИЧИТ", yOffsetT, Color3.fromRGB(180, 70, 70))
 killAnticheat.MouseButton1Click:Connect(function()
     pcall(function()
-        local map = workspace:FindFirstChild("Map")
-        if map and map:FindFirstChild("AntiHack") then map.AntiHack:Destroy() end
+        if workspace.Map and workspace.Map:FindFirstChild("AntiHack") then workspace.Map.AntiHack:Destroy() end
     end)
 end)
 
@@ -848,8 +791,7 @@ yOffsetT = yOffsetT + buttonHeight + spacing
 local adminWarnBtn = createButton(tabSettingsContent, "👑 ПРЕДУПР. ОБ АДМИНЕ: ВКЛ", yOffsetT)
 local adminWarningActive = true
 local function isAdmin(player)
-    if player.UserId == 1 then return true end
-    if player.Name == "ROBLOX" then return true end
+    if player.UserId == 1 or player.Name == "ROBLOX" then return true end
     return false
 end
 local function checkAdmins()
@@ -924,5 +866,5 @@ if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") th
 end
 
 print("[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]")
-print("GUI v36 - ПЕРЕТАСКИВАНИЕ РАБОТАЕТ НА ТЕЛЕФОНЕ")
-print("Маленькие кнопки | Прокрутка работает | Все помещается на экране")
+print("GUI v37 - ВО ВЕСЬ ЭКРАН С КОМПАКТНЫМИ КНОПКАМИ")
+print("Полноэкранный режим | Маленькие кнопки | Прокрутка работает")
