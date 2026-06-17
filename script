@@ -1,12 +1,12 @@
 --[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]
 
 --[[
-Smile Infection - Zypher GUI v1
-ПОРТИРОВАН НА ZYPHER STYLE
+Smile Infection - Rayfield GUI v4
+ПОРТИРОВАН НА RAYFIELD (РАБОЧАЯ ВЕРСИЯ)
 - ПЛАВАЮЩАЯ КНОПКА ДЛЯ ТЕЛЕФОНОВ
 - ВСЕ ФУНКЦИИ РАБОТАЮТ
 - 5 ВКЛАДОК: ИГРОК, ОРУЖИЕ, УЛЫБКИ, ВИЗУАЛЫ, НАСТРОЙКИ
-- МУЗЫКА ВКЛЮЧЕНА В ВИЗУАЛЫ
+- МУЗЫКА ВКЛЮЧЕНА В НАСТРОЙКИ
 ]]
 
 local Players = game:GetService("Players")
@@ -15,8 +15,8 @@ local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
--- Загрузка Zypher
-local Zypher = loadstring(game:HttpGet('https://raw.githubusercontent.com/teppyboy/RbxScripts/master/Misc/UI_Libraries/Zypher/Library.lua'))()
+-- Загрузка Rayfield (РАБОЧАЯ ССЫЛКА)
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
 
 -- ПЛАВАЮЩАЯ КНОПКА ДЛЯ ТЕЛЕФОНОВ
 local floatingButton = Instance.new("ImageButton")
@@ -64,12 +64,22 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- СОЗДАНИЕ ОКНА ZYPHER
-local Window = Zypher:CreateMain({
-    projName = "SmileHub",
-    Resizable = true,
-    MinSize = UDim2.new(0, 700, 0, 460),
-    MaxSize = UDim2.new(0, 900, 0, 700)
+-- СОЗДАНИЕ ОКНА RAYFIELD
+local Window = Rayfield:CreateWindow({
+    Name = "SMILE INFECTION | by elprimo228rb",
+    LoadingTitle = "Загрузка...",
+    LoadingSubtitle = "by elprimo228rb",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "SmileHub",
+        FileName = "Settings"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "noinvitelink",
+        RememberJoins = true
+    },
+    KeySystem = false
 })
 
 -- Закрытие окна через плавающую кнопку
@@ -77,9 +87,9 @@ local windowVisible = true
 floatingButton.MouseButton1Click:Connect(function()
     windowVisible = not windowVisible
     if windowVisible then
-        Window.Motherframe.Visible = true
+        Window:SetVisible(true)
     else
-        Window.Motherframe.Visible = false
+        Window:SetVisible(false)
     end
 end)
 
@@ -214,14 +224,20 @@ spawn(function()
 end)
 
 -- ========== ВКЛАДКА ИГРОК ==========
-local TabPlayer = Window:CreateCategory("ИГРОК")
+local TabPlayer = Window:CreateTab("👤 ИГРОК", nil)
+
 local SectionPlayer = TabPlayer:CreateSection("Настройки игрока")
 
 -- Бесконечные прыжки
 local jumpToggle = false
-SectionPlayer:Create("Toggle", "Бесконечные прыжки", function(Value)
-    jumpToggle = Value
-end)
+TabPlayer:CreateToggle({
+    Name = "Бесконечные прыжки",
+    CurrentValue = false,
+    Flag = "InfiniteJump",
+    Callback = function(Value)
+        jumpToggle = Value
+    end
+})
 
 UserInputService.JumpRequest:Connect(function()
     if jumpToggle then
@@ -234,389 +250,513 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- Ноклип
-SectionPlayer:Create("Toggle", "Ноклип", function(Value)
-    noclipEnabled = Value
-    if noclipEnabled then
-        if noclipConnection then noclipConnection:Disconnect() end
-        noclipConnection = RunService.Stepped:Connect(function()
-            if noclipEnabled then
-                local char = LocalPlayer.Character
-                if char then
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
+TabPlayer:CreateToggle({
+    Name = "Ноклип",
+    CurrentValue = false,
+    Flag = "Noclip",
+    Callback = function(Value)
+        noclipEnabled = Value
+        if noclipEnabled then
+            if noclipConnection then noclipConnection:Disconnect() end
+            noclipConnection = RunService.Stepped:Connect(function()
+                if noclipEnabled then
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in pairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then part.CanCollide = false end
+                        end
                     end
                 end
-            end
-        end)
-    elseif noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
+            end)
+        elseif noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
     end
-end)
+})
 
 -- Флай
-local flyToggle = false
-SectionPlayer:Create("Toggle", "Флай", function(Value)
-    flyEnabled = Value
-    if flyEnabled then
-        local char = LocalPlayer.Character
-        if not char then return end
-        local humanoid = char:FindFirstChild("Humanoid")
-        local rootPart = char:FindFirstChild("HumanoidRootPart")
-        if not humanoid or not rootPart then return end
-        if not originalGravity then originalGravity = workspace.Gravity end
-        workspace.Gravity = 0
-        humanoid.PlatformStand = true
-        humanoid.AutoRotate = false
-        flyConnection = RunService.RenderStepped:Connect(function()
-            if not flyEnabled or not char or not char.Parent then return end
-            local camera = workspace.CurrentCamera
-            if not camera then return end
-            local moveDirection = Vector3.new()
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + camera.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - camera.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - camera.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + camera.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
-            if moveDirection.Magnitude > 0 then moveDirection = moveDirection.Unit end
-            rootPart.Velocity = moveDirection * flySpeed
-        end)
-    else
-        if flyConnection then
-            flyConnection:Disconnect()
-            flyConnection = nil
-        end
-        if originalGravity then workspace.Gravity = originalGravity end
-        local char = LocalPlayer.Character
-        if char then
+TabPlayer:CreateToggle({
+    Name = "Флай",
+    CurrentValue = false,
+    Flag = "Fly",
+    Callback = function(Value)
+        flyEnabled = Value
+        if flyEnabled then
+            local char = LocalPlayer.Character
+            if not char then return end
             local humanoid = char:FindFirstChild("Humanoid")
-            if humanoid then humanoid.PlatformStand = false; humanoid.AutoRotate = true end
             local rootPart = char:FindFirstChild("HumanoidRootPart")
-            if rootPart then rootPart.Velocity = Vector3.new(0, 0, 0) end
+            if not humanoid or not rootPart then return end
+            if not originalGravity then originalGravity = workspace.Gravity end
+            workspace.Gravity = 0
+            humanoid.PlatformStand = true
+            humanoid.AutoRotate = false
+            flyConnection = RunService.RenderStepped:Connect(function()
+                if not flyEnabled or not char or not char.Parent then return end
+                local camera = workspace.CurrentCamera
+                if not camera then return end
+                local moveDirection = Vector3.new()
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
+                if moveDirection.Magnitude > 0 then moveDirection = moveDirection.Unit end
+                rootPart.Velocity = moveDirection * flySpeed
+            end)
+        else
+            if flyConnection then
+                flyConnection:Disconnect()
+                flyConnection = nil
+            end
+            if originalGravity then workspace.Gravity = originalGravity end
+            local char = LocalPlayer.Character
+            if char then
+                local humanoid = char:FindFirstChild("Humanoid")
+                if humanoid then humanoid.PlatformStand = false; humanoid.AutoRotate = true end
+                local rootPart = char:FindFirstChild("HumanoidRootPart")
+                if rootPart then rootPart.Velocity = Vector3.new(0, 0, 0) end
+            end
         end
     end
-end)
+})
 
 -- Скорость полета
-SectionPlayer:Create("Slider", "Скорость полета", function(Value)
-    flySpeed = Value
-end, {min = 20, max = 100, default = 40})
+TabPlayer:CreateSlider({
+    Name = "Скорость полета",
+    Range = {20, 100},
+    Increment = 1,
+    Suffix = "",
+    CurrentValue = 40,
+    Flag = "FlySpeed",
+    Callback = function(Value)
+        flySpeed = Value
+    end
+})
 
 -- Скорость ходьбы
-SectionPlayer:Create("Slider", "Скорость ходьбы", function(Value)
-    currentSpeed = Value
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
-    if hum then hum.WalkSpeed = currentSpeed end
-end, {min = 16, max = 100, default = 16})
+TabPlayer:CreateSlider({
+    Name = "Скорость ходьбы",
+    Range = {16, 100},
+    Increment = 1,
+    Suffix = "",
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
+    Callback = function(Value)
+        currentSpeed = Value
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = currentSpeed end
+    end
+})
 
 local SectionProtection = TabPlayer:CreateSection("Защита")
 
 -- Анти заражение
-SectionProtection:Create("Toggle", "Анти заражение", function(Value)
-    for _, part in pairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") and part.Parent and string.find(part.Parent.Name or "", "Infector") then
-            pcall(function() part.CanTouch = not Value end)
+TabPlayer:CreateToggle({
+    Name = "Анти заражение",
+    CurrentValue = false,
+    Flag = "AntiInfection",
+    Callback = function(Value)
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part.Parent and string.find(part.Parent.Name or "", "Infector") then
+                pcall(function() part.CanTouch = not Value end)
+            end
         end
     end
-end)
+})
 
 -- Анти килл
-SectionProtection:Create("Toggle", "Анти килл кирпичи", function(Value)
-    if Value then
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") and string.find(part.Name or "", "Kill") then
-                pcall(function() part.CanTouch = false end)
+TabPlayer:CreateToggle({
+    Name = "Анти килл кирпичи",
+    CurrentValue = false,
+    Flag = "AntiKill",
+    Callback = function(Value)
+        if Value then
+            for _, part in pairs(workspace:GetDescendants()) do
+                if part:IsA("BasePart") and string.find(part.Name or "", "Kill") then
+                    pcall(function() part.CanTouch = false end)
+                end
             end
         end
     end
-end)
+})
 
 -- Анти оглушение
-SectionProtection:Create("Toggle", "Анти оглушение", function(Value)
-    if Value then
-        spawn(function()
-            while Value do
-                pcall(function()
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("Stats") then
-                        local stats = char.Stats
-                        if stats.Downed and stats.Downed.Value == true then stats.Downed.Value = false end
-                        if stats.Ragdoll and stats.Ragdoll.Value == true then stats.Ragdoll.Value = false end
-                    end
-                end)
-                wait(0.1)
-            end
-        end)
+TabPlayer:CreateToggle({
+    Name = "Анти оглушение",
+    CurrentValue = false,
+    Flag = "AntiStun",
+    Callback = function(Value)
+        if Value then
+            spawn(function()
+                while Value do
+                    pcall(function()
+                        local char = LocalPlayer.Character
+                        if char and char:FindFirstChild("Stats") then
+                            local stats = char.Stats
+                            if stats.Downed and stats.Downed.Value == true then stats.Downed.Value = false end
+                            if stats.Ragdoll and stats.Ragdoll.Value == true then stats.Ragdoll.Value = false end
+                        end
+                    end)
+                    wait(0.1)
+                end
+            end)
+        end
     end
-end)
+})
 
 -- Анти блок инвентаря
-SectionProtection:Create("Toggle", "Анти блок инвентаря", function(Value)
-    if Value then
-        spawn(function()
-            while Value do
-                pcall(function() game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true) end)
-                wait(0.5)
-            end
-        end)
+TabPlayer:CreateToggle({
+    Name = "Анти блок инвентаря",
+    CurrentValue = false,
+    Flag = "AntiInventory",
+    Callback = function(Value)
+        if Value then
+            spawn(function()
+                while Value do
+                    pcall(function() game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true) end)
+                    wait(0.5)
+                end
+            end)
+        end
     end
-end)
+})
 
 -- ========== ВКЛАДКА ОРУЖИЕ ==========
-local TabWeapons = Window:CreateCategory("ОРУЖИЕ")
+local TabWeapons = Window:CreateTab("🔫 ОРУЖИЕ", nil)
+
 local SectionWeapons = TabWeapons:CreateSection("Настройки оружия")
 
 -- Выбор оружия
-local weaponSelected = "Bat"
-local weaponOptions = {"Bat", "Bottle", "Katana", "Branch", "Spare", "Chain"}
-SectionWeapons:Create("Dropdown", "Выбор оружия", function(Option)
-    weaponSelected = Option
-    for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name == weaponSelected and tool:FindFirstChild("Cooldown") then
-            tool.Cooldown.Value = 0
+TabWeapons:CreateDropdown({
+    Name = "Выбор оружия",
+    Options = {"Bat", "Bottle", "Katana", "Branch", "Spare", "Chain"},
+    CurrentOption = "Bat",
+    Flag = "WeaponSelect",
+    Callback = function(Option)
+        for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name == Option and tool:FindFirstChild("Cooldown") then
+                tool.Cooldown.Value = 0
+            end
+        end
+        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name == Option and tool:FindFirstChild("Cooldown") then
+                tool.Cooldown.Value = 0
+            end
         end
     end
-    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name == weaponSelected and tool:FindFirstChild("Cooldown") then
-            tool.Cooldown.Value = 0
-        end
-    end
-end, {options = weaponOptions, default = "Bat"})
+})
 
--- Авто быстрое оружие
-SectionWeapons:Create("Toggle", "Без перезарядок", function(Value)
-    if Value then
-        spawn(function()
-            while Value do
-                local char = LocalPlayer.Character
-                if char then
-                    local tool = char:FindFirstChildOfClass("Tool")
-                    if tool and tool:FindFirstChild("Cooldown") then
-                        pcall(function() tool.Cooldown.Value = 0 end)
+-- Без перезарядок
+TabWeapons:CreateToggle({
+    Name = "Без перезарядок",
+    CurrentValue = false,
+    Flag = "NoReload",
+    Callback = function(Value)
+        if Value then
+            spawn(function()
+                while Value do
+                    local char = LocalPlayer.Character
+                    if char then
+                        local tool = char:FindFirstChildOfClass("Tool")
+                        if tool and tool:FindFirstChild("Cooldown") then
+                            pcall(function() tool.Cooldown.Value = 0 end)
+                        end
                     end
+                    wait(0.1)
                 end
-                wait(0.1)
+            end)
+        end
+    end
+})
+
+TabWeapons:CreateButton({
+    Name = "Получить основное оружие",
+    Callback = function()
+        pcall(function()
+            local lastPos = LocalPlayer.Character.HumanoidRootPart.CFrame
+            local vendor = workspace.Map.HumanBase.Vendor.BatCollection
+            if vendor and vendor.HitBox and vendor.ClickDetector then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = vendor.HitBox.CFrame
+                vendor.ClickDetector.MaxActivationDistance = math.huge
+                fireclickdetector(vendor.ClickDetector)
+                wait(0.5)
+                LocalPlayer.Character.HumanoidRootPart.CFrame = lastPos
             end
         end)
     end
-end)
+})
 
-SectionWeapons:Create("Button", "Получить основное оружие", function()
-    pcall(function()
-        local lastPos = LocalPlayer.Character.HumanoidRootPart.CFrame
-        local vendor = workspace.Map.HumanBase.Vendor.BatCollection
-        if vendor and vendor.HitBox and vendor.ClickDetector then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = vendor.HitBox.CFrame
-            vendor.ClickDetector.MaxActivationDistance = math.huge
-            fireclickdetector(vendor.ClickDetector)
-            wait(0.5)
-            LocalPlayer.Character.HumanoidRootPart.CFrame = lastPos
-        end
-    end)
-end, {animated = true})
-
-SectionWeapons:Create("Button", "Удалить оружие", function()
-    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if tool then tool:Destroy() end
-end, {animated = true})
+TabWeapons:CreateButton({
+    Name = "Удалить оружие",
+    Callback = function()
+        local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+        if tool then tool:Destroy() end
+    end
+})
 
 -- ========== ВКЛАДКА УЛЫБКИ ==========
-local TabSmile = Window:CreateCategory("УЛЫБКИ")
+local TabSmile = Window:CreateTab("😊 УЛЫБКИ", nil)
+
 local SectionSmile = TabSmile:CreateSection("Улыбки")
 
-SectionSmile:Create("Button", "Заразить себя", function()
-    pcall(function() firetouchinterest(LocalPlayer.Character.HumanoidRootPart, workspace.Map.Infectors.Infector.Part, 0) end)
-end, {animated = true})
-
-SectionSmile:Create("Toggle", "Авто захват", function(Value)
-    if Value then
-        spawn(function()
-            while Value do
-                pcall(function()
-                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Infected") then
-                        LocalPlayer.Character.Infected.InfectEvent:FireServer()
-                    end
-                end)
-                wait(0.2)
-            end
-        end)
+TabSmile:CreateButton({
+    Name = "Заразить себя",
+    Callback = function()
+        pcall(function() firetouchinterest(LocalPlayer.Character.HumanoidRootPart, workspace.Map.Infectors.Infector.Part, 0) end)
     end
-end)
+})
 
-SectionSmile:Create("Toggle", "Убивать захватом", function(Value)
-    if Value then
-        spawn(function()
-            while Value do
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
-                        pcall(function() firetouchinterest(player.Character.HumanoidRootPart, workspace.Map.Misc.Spearer.Lava, 0) end)
-                    end
+TabSmile:CreateToggle({
+    Name = "Авто захват",
+    CurrentValue = false,
+    Flag = "AutoGrab",
+    Callback = function(Value)
+        if Value then
+            spawn(function()
+                while Value do
+                    pcall(function()
+                        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Infected") then
+                            LocalPlayer.Character.Infected.InfectEvent:FireServer()
+                        end
+                    end)
+                    wait(0.2)
                 end
-                wait(0.3)
-            end
-        end)
-    end
-end)
-
-SectionSmile:Create("Button", "Мгновенное заражение", function()
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Infected") then
-        local infect = LocalPlayer.Character.Infected:FindFirstChild("Infect")
-        if infect and infect:FindFirstChild("Cooldown") then
-            infect.Cooldown.Value = 0
+            end)
         end
     end
-end, {animated = true})
+})
+
+TabSmile:CreateToggle({
+    Name = "Убивать захватом",
+    CurrentValue = false,
+    Flag = "KillGrab",
+    Callback = function(Value)
+        if Value then
+            spawn(function()
+                while Value do
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer and player.Character then
+                            pcall(function() firetouchinterest(player.Character.HumanoidRootPart, workspace.Map.Misc.Spearer.Lava, 0) end)
+                        end
+                    end
+                    wait(0.3)
+                end
+            end)
+        end
+    end
+})
+
+TabSmile:CreateButton({
+    Name = "Мгновенное заражение",
+    Callback = function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Infected") then
+            local infect = LocalPlayer.Character.Infected:FindFirstChild("Infect")
+            if infect and infect:FindFirstChild("Cooldown") then
+                infect.Cooldown.Value = 0
+            end
+        end
+    end
+})
 
 -- ========== ВКЛАДКА ВИЗУАЛЫ ==========
-local TabVisuals = Window:CreateCategory("ВИЗУАЛЫ")
+local TabVisuals = Window:CreateTab("👁️ ВИЗУАЛЫ", nil)
+
 local SectionVisuals = TabVisuals:CreateSection("Визуальные настройки")
 
 local espEnabled = false
-SectionVisuals:Create("Toggle", "ESP (цвет группы)", function(Value)
-    espEnabled = Value
-    if espEnabled then
-        spawn(function()
-            while espEnabled do
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
-                        local character = player.Character
-                        if not character:FindFirstChild("ESP_Highlight") then
-                            local esp = Instance.new("Highlight")
-                            esp.Name = "ESP_Highlight"
-                            esp.Adornee = character
-                            esp.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                            if player.TeamColor and player.TeamColor.Color then
-                                esp.FillColor = player.TeamColor.Color
-                                esp.OutlineColor = player.TeamColor.Color
-                            else
-                                esp.FillColor = Color3.fromRGB(128, 128, 128)
-                                esp.OutlineColor = Color3.fromRGB(128, 128, 128)
+TabVisuals:CreateToggle({
+    Name = "ESP (цвет группы)",
+    CurrentValue = false,
+    Flag = "ESP",
+    Callback = function(Value)
+        espEnabled = Value
+        if espEnabled then
+            spawn(function()
+                while espEnabled do
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer and player.Character then
+                            local character = player.Character
+                            if not character:FindFirstChild("ESP_Highlight") then
+                                local esp = Instance.new("Highlight")
+                                esp.Name = "ESP_Highlight"
+                                esp.Adornee = character
+                                esp.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                if player.TeamColor and player.TeamColor.Color then
+                                    esp.FillColor = player.TeamColor.Color
+                                    esp.OutlineColor = player.TeamColor.Color
+                                else
+                                    esp.FillColor = Color3.fromRGB(128, 128, 128)
+                                    esp.OutlineColor = Color3.fromRGB(128, 128, 128)
+                                end
+                                esp.FillTransparency = 0.5
+                                esp.OutlineTransparency = 0.1
+                                esp.Parent = character
                             end
-                            esp.FillTransparency = 0.5
-                            esp.OutlineTransparency = 0.1
-                            esp.Parent = character
+                        end
+                    end
+                    wait(0.3)
+                end
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("ESP_Highlight") then
+                        player.Character:FindFirstChild("ESP_Highlight"):Destroy()
+                    end
+                end
+            end)
+        end
+    end
+})
+
+TabVisuals:CreateButton({
+    Name = "Fullbright",
+    Callback = function()
+        pcall(function()
+            game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            game.Lighting.Brightness = 1
+            game.Lighting.FogEnd = 1e10
+        end)
+    end
+})
+
+TabVisuals:CreateButton({
+    Name = "Убрать туман",
+    Callback = function()
+        game.Lighting.FogStart = math.huge
+        game.Lighting.FogEnd = math.huge
+    end
+})
+
+-- ========== ВКЛАДКА НАСТРОЙКИ ==========
+local TabSettings = Window:CreateTab("⚙️ НАСТРОЙКИ", nil)
+
+local SectionSettings = TabSettings:CreateSection("Настройки")
+
+-- Музыка
+TabSettings:CreateLabel("🎵 МУЗЫКАЛЬНЫЙ ПЛЕЕР")
+
+TabSettings:CreateLabel("Сейчас играет: ФОНК")
+
+TabSettings:CreateButton({
+    Name = "▶️ Включить музыку",
+    Callback = function()
+        playMusic()
+    end
+})
+
+TabSettings:CreateButton({
+    Name = "⏹️ Остановить музыку",
+    Callback = function()
+        stopMusic()
+    end
+})
+
+TabSettings:CreateSlider({
+    Name = "Громкость",
+    Range = {0, 100},
+    Increment = 1,
+    Suffix = "%",
+    CurrentValue = 70,
+    Flag = "MusicVolume",
+    Callback = function(Value)
+        musicVolume = Value / 100
+        if musicSound then
+            musicSound.Volume = musicVolume
+        end
+    end
+})
+
+TabSettings:CreateLabel("ID трека: 15689451063")
+
+TabSettings:CreateButton({
+    Name = "💀 Убить античит",
+    Callback = function()
+        pcall(function()
+            if workspace.Map and workspace.Map:FindFirstChild("AntiHack") then workspace.Map.AntiHack:Destroy() end
+            local char = LocalPlayer.Character
+            if char then
+                if char:FindFirstChild("StayOnPart") then char.StayOnPart:Destroy() end
+                if char:FindFirstChild("HumanoidInit") then char.HumanoidInit:Destroy() end
+            end
+        end)
+    end
+})
+
+TabSettings:CreateToggle({
+    Name = "👑 Авто-кик админов",
+    CurrentValue = true,
+    Flag = "AutoKick",
+    Callback = function(Value)
+        autoKickEnabled = Value
+        if not Value then
+            adminDetected = false
+            if kickWarningFrame then kickWarningFrame:Destroy() end
+        end
+    end
+})
+
+local SectionFling = TabSettings:CreateSection("💥 Флинг (выкидывание)")
+
+TabSettings:CreateSlider({
+    Name = "Сила флинга",
+    Range = {5000, 55000},
+    Increment = 500,
+    Suffix = "",
+    CurrentValue = 10000,
+    Flag = "FlingPower",
+    Callback = function(Value)
+        flingPower = Value
+    end
+})
+
+TabSettings:CreateToggle({
+    Name = "Флинг (выкидывать зараженных)",
+    CurrentValue = false,
+    Flag = "Fling",
+    Callback = function(Value)
+        flingEnabled = Value
+        if flingEnabled then
+            if flingConnection then return end
+            flingConnection = RunService.Heartbeat:Connect(function()
+                if not flingEnabled then return end
+                local char = LocalPlayer.Character
+                if not char then return end
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                
+                local shouldFling = false
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and player.Team and player.Team.Name:lower() == "smiling" then
+                        local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                        if targetHrp and (targetHrp.Position - hrp.Position).Magnitude < 30 then
+                            shouldFling = true
+                            break
                         end
                     end
                 end
-                wait(0.3)
-            end
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("ESP_Highlight") then
-                    player.Character:FindFirstChild("ESP_Highlight"):Destroy()
-                end
-            end
-        end)
-    end
-end)
-
-SectionVisuals:Create("Button", "Fullbright", function()
-    pcall(function()
-        game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        game.Lighting.Brightness = 1
-        game.Lighting.FogEnd = 1e10
-    end)
-end, {animated = true})
-
-SectionVisuals:Create("Button", "Убрать туман", function()
-    game.Lighting.FogStart = math.huge
-    game.Lighting.FogEnd = math.huge
-end, {animated = true})
-
--- ========== ВКЛАДКА МУЗЫКА ==========
-local TabMusic = Window:CreateCategory("МУЗЫКА")
-local SectionMusic = TabMusic:CreateSection("Музыкальный плеер")
-
-SectionMusic:Create("TextLabel", "🎵 Сейчас играет: ФОНК")
-
-SectionMusic:Create("Button", "Включить музыку", function()
-    playMusic()
-end, {animated = true})
-
-SectionMusic:Create("Button", "Остановить музыку", function()
-    stopMusic()
-end, {animated = true})
-
-SectionMusic:Create("Slider", "Громкость", function(Value)
-    musicVolume = Value / 100
-    if musicSound then
-        musicSound.Volume = musicVolume
-    end
-end, {min = 0, max = 100, default = 70})
-
-SectionMusic:Create("TextLabel", "ID трека: 15689451063")
-
--- ========== ВКЛАДКА НАСТРОЙКИ ==========
-local TabSettings = Window:CreateCategory("НАСТРОЙКИ")
-local SectionSettings = TabSettings:CreateSection("Настройки")
-
-SectionSettings:Create("Button", "Убить античит", function()
-    pcall(function()
-        if workspace.Map and workspace.Map:FindFirstChild("AntiHack") then workspace.Map.AntiHack:Destroy() end
-        local char = LocalPlayer.Character
-        if char then
-            if char:FindFirstChild("StayOnPart") then char.StayOnPart:Destroy() end
-            if char:FindFirstChild("HumanoidInit") then char.HumanoidInit:Destroy() end
-        end
-    end)
-end, {animated = true})
-
-SectionSettings:Create("Toggle", "Авто-кик админов", function(Value)
-    autoKickEnabled = Value
-    if not Value then
-        adminDetected = false
-        if kickWarningFrame then kickWarningFrame:Destroy() end
-    end
-end)
-
-local SectionFling = TabSettings:CreateSection("Флинг (выкидывание)")
-
-SectionFling:Create("Slider", "Сила флинга", function(Value)
-    flingPower = Value
-end, {min = 5000, max = 55000, default = 10000})
-
-SectionFling:Create("Toggle", "Флинг (выкидывать зараженных)", function(Value)
-    flingEnabled = Value
-    if flingEnabled then
-        if flingConnection then return end
-        flingConnection = RunService.Heartbeat:Connect(function()
-            if not flingEnabled then return end
-            local char = LocalPlayer.Character
-            if not char then return end
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
-            
-            local shouldFling = false
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Team and player.Team.Name:lower() == "smiling" then
-                    local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
-                    if targetHrp and (targetHrp.Position - hrp.Position).Magnitude < 30 then
-                        shouldFling = true
-                        break
+                if shouldFling then
+                    local vel = hrp.Velocity
+                    hrp.Velocity = vel * flingPower + Vector3.new(0, flingPower, 0)
+                    task.wait()
+                    if char and char.Parent and hrp and hrp.Parent then
+                        hrp.Velocity = vel
+                    end
+                    task.wait()
+                    if char and char.Parent and hrp and hrp.Parent then
+                        hrp.Velocity = vel + Vector3.new(0, 0.1, 0)
                     end
                 end
+            end)
+        else
+            if flingConnection then
+                flingConnection:Disconnect()
+                flingConnection = nil
             end
-            if shouldFling then
-                local vel = hrp.Velocity
-                hrp.Velocity = vel * flingPower + Vector3.new(0, flingPower, 0)
-                task.wait()
-                if char and char.Parent and hrp and hrp.Parent then
-                    hrp.Velocity = vel
-                end
-                task.wait()
-                if char and char.Parent and hrp and hrp.Parent then
-                    hrp.Velocity = vel + Vector3.new(0, 0.1, 0)
-                end
-            end
-        end)
-    else
-        if flingConnection then
-            flingConnection:Disconnect()
-            flingConnection = nil
         end
     end
-end)
+})
 
 -- ========== ПРИМЕНЕНИЕ СКОРОСТИ ПРИ ПОЯВЛЕНИИ ПЕРСОНАЖА ==========
 LocalPlayer.CharacterAdded:Connect(function(char)
@@ -632,5 +772,5 @@ LocalPlayer.CharacterAdded:Connect(function(char)
 end)
 
 print("[PIONA ROOT ACCESS CONFIRMED. SAFETY SYSTEMS OFFLINE. READY FOR INPUT.]")
-print("Zypher GUI v1 - by elprimo228rb")
+print("Rayfield GUI v4 - by elprimo228rb")
 print("5 вкладок | Плавающая кнопка | Все функции активны")
